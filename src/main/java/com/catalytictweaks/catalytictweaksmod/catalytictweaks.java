@@ -59,7 +59,7 @@ public class catalytictweaks
     }
 
     // Use EventBusSubscriber to automatically register all static methods in the class with @SubscribeEvent annotation
-    @EventBusSubscriber(modid = MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
     public static class ClientModEvents
     {
         @SubscribeEvent

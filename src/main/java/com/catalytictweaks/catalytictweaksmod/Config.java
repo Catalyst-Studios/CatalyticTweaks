@@ -1,8 +1,6 @@
 package com.catalytictweaks.catalytictweaksmod;
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -14,7 +12,7 @@ import java.util.Set;
 
 
 //builds config
-@EventBusSubscriber(modid = catalytictweaks.MODID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = catalytictweaks.MODID)
 public class Config {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
@@ -59,6 +57,13 @@ public class Config {
     private static final ModConfigSpec.BooleanValue INFINITY_CAN_CHANGE_DISTRIBUTION = BUILDER
             .define("PIPEZ.INFINITY.canChangeDistributionMode", true);
 
+    private static final ModConfigSpec.BooleanValue SHOULD_MMR_DO_ONE_RECIPE = BUILDER
+            .define("MMR.RECIPES.shouldDoOneRecipe", true);
+
+    private static final ModConfigSpec.IntValue TIME_BETWEEN_RECIPES = BUILDER
+        .comment("Time in ticks to wait before checking for recipes again after a failure.")
+        .defineInRange("mmr.recipes.time_between_tries", 100, 0, Integer.MAX_VALUE);
+
 
     static final ModConfigSpec SPEC = BUILDER.build();
 
@@ -82,6 +87,8 @@ public class Config {
     public static boolean infinityCanChangeRedstoneMode;
     public static boolean infinityCanChangeFilter;
     public static boolean infinityCanChangeDistribution;
+    public static boolean shouldmmrdoonerecipe;
+    public static int timebetweentries;
 
     // Runnable callback for configuration change
     private static Runnable configChangeCallback;
@@ -120,6 +127,9 @@ public class Config {
             infinityCanChangeFilter = INFINITY_CAN_CHANGE_FILTER.get();
             infinityCanChangeDistribution = INFINITY_CAN_CHANGE_DISTRIBUTION.get();
 
+            shouldmmrdoonerecipe = SHOULD_MMR_DO_ONE_RECIPE.get();
+            timebetweentries = TIME_BETWEEN_RECIPES.get();
+
             onConfigLoaded();
         }
     }
@@ -130,9 +140,5 @@ public class Config {
         if (configChangeCallback != null) {
             configChangeCallback.run();
         }
-    }
-
-    private static boolean validateItemName(final Object obj) {
-        return obj instanceof String itemName && BuiltInRegistries.ITEM.containsKey(ResourceLocation.parse(itemName));
     }
 }

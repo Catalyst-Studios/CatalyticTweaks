@@ -4,7 +4,18 @@
   "package": "com.catalytictweaks.catalytictweaksmod.mixin",
   "refmap": "mixins.catalytictweaks.refmap.json",
   "mixins": [
-    "PipezMixin"
+    "PipezMixin",
+    "mmr.controller.MachineControllerEntityMixin",
+    "mmr.controller.MachineProcessorCoreAccessor",
+    "mmr.controller.MachineProcessorCoreMixin",
+    "mmr.controller.MachineProcessorMixin",
+    "mmr.io.IOInventoryAccessor",
+    "mmr.io.IOInventoryMixin",
+    "mmr.recipes.RecipeRequirementMixin",
+    "mmr.recipes.ComponentManagerMixin",
+    "mmr.recipes.Debugger",
+    "mmr.recipes.RequirementItemDebugMixin",
+    "mmr.recipes.ComponentManagerAccessor"
   ],
   "client": [],
   "server": [],

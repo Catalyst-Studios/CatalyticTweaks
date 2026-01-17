@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '1.0.21'
+    id 'net.neoforged.moddev' version '2.0.139'
 }
 
 tasks.named('wrapper', Wrapper).configure {
@@ -16,7 +16,17 @@ repositories {
     mavenCentral()  // Add Maven Central for common dependencies
     maven { url = uri("https://maven.fabricmc.net") }  // Fabric repository
     maven { url = uri("https://repo.maven.apache.org/maven2") }  // Apache Maven Central
-    maven { url = "https://api.modrinth.com/maven"}
+    maven { url = "https://api.modrinth.com/maven"}  // Modrinth Maven Central
+    exclusiveContent {
+        forRepository {
+            maven {
+                url "https://cursemaven.com"  // Curseforge Maven Central
+            }
+        }
+        filter {
+            includeGroup "curse.maven"
+        }
+    }
 }
 
 base {
@@ -75,9 +85,15 @@ configurations {
 
 dependencies {
     compileOnly("maven.modrinth:pipez:z20ZR1YE")
-
-
-
+    implementation "curse.maven:modular-machinery-reborn-1083840:7369667"
+    implementation "curse.maven:kubejs-238086:7278501"
+    implementation "curse.maven:emi-580555:6420931"
+    implementation "curse.maven:athena-841890:7097200"
+    implementation "curse.maven:rhino-416294:7104526"
+    implementation "curse.maven:experiencelib-1156551:6616717"
+    implementation "curse.maven:mekanism-268560:7132168"
+    implementation "curse.maven:spark-361579:6225208"
+    implementation "curse.maven:jade-324717:7428884"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
@@ -118,11 +134,4 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-}
-
-idea {
-    module {
-        downloadSources = true
-        downloadJavadoc = true
-    }
 }
