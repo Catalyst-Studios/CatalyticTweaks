@@ -76,6 +76,8 @@ public class MachineRecipeFinderMixin implements IMachineRecipeFinder{
 
             InputSnapshot snapshot = new InputSnapshot((IComponentManager) this.tile.getComponentManager());
 
+            Pair<RecipeHolder<MachineRecipe>, Integer> bestMatch = null;
+
             Iterator<RecipeChecker<MachineRecipe>> iterator = this.okToCheck.iterator();
             while (iterator.hasNext()) {
                 RecipeChecker<MachineRecipe> checker = iterator.next();
@@ -111,17 +113,35 @@ public class MachineRecipeFinderMixin implements IMachineRecipeFinder{
                         maxCrafts = Math.min(maxCrafts, matches);
                     }
 
-                    if (inputsSufficient) {
-                        this.componentChanged = true;
+                    if(inputsSufficient)
+                    {
                         if (maxCrafts == Integer.MAX_VALUE) maxCrafts = 1;
 
-                        return Optional.of(Pair.of(checker.getRecipe(), maxCrafts));
+                        if (bestMatch == null) {
+                            bestMatch = Pair.of(checker.getRecipe(), maxCrafts);
+                        } else {
+                            int currentPriority = recipe.getConfiguredPriority(); 
+                            int bestPriority = bestMatch.getFirst().value().getConfiguredPriority();
+
+                            if (currentPriority > bestPriority) {
+                                bestMatch = Pair.of(checker.getRecipe(), maxCrafts);
+                            }
+                            else if (currentPriority == bestPriority) {
+                                if (maxCrafts > bestMatch.getSecond()) {
+                                    bestMatch = Pair.of(checker.getRecipe(), maxCrafts);
+                                }
+                            }
+                        }
+                        continue; 
                     }
                 }
 
-                if(!checker.isInventoryRequirementsOk()) iterator.remove();
+                if (!checker.isInventoryRequirementsOk()) iterator.remove();
             }
+
             this.componentChanged = false;
+
+            return Optional.ofNullable(bestMatch);
         }
         return Optional.empty();
     }

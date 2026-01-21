@@ -1,5 +1,6 @@
 package com.catalytictweaks.catalytictweaksmod.mixin.mmr;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.spongepowered.asm.mixin.Final;
@@ -8,6 +9,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
 import es.degrassi.mmreborn.api.crafting.CraftingContext;
+import es.degrassi.mmreborn.api.crafting.CraftingResult;
 import es.degrassi.mmreborn.api.crafting.requirement.IRequirement;
 import es.degrassi.mmreborn.common.crafting.MachineRecipe;
 import es.degrassi.mmreborn.common.entity.MachineControllerEntity;
@@ -47,9 +49,9 @@ public abstract class MachineProcessorCoreMixin {
     @Shadow protected int core;
 
     @Shadow public abstract void reset();
+    @Shadow protected abstract void setError(Component error);
+    @Shadow protected abstract void setRunning();
     @Shadow protected abstract void checkConditions();
-    @Shadow protected abstract void processRequirements();
-    @Shadow protected abstract void processTickRequirements();
 
 
     @Overwrite
@@ -76,5 +78,65 @@ public abstract class MachineProcessorCoreMixin {
                 
             }
         }
+    }
+
+    @Overwrite
+    public void processRequirements() {
+        if (this.currentProcessRequirements.isEmpty())
+        {
+            this.requirementList.getProcessRequirements().entrySet().removeIf(entry -> {
+                //if the recipe is at last tick process all remaining requirements
+                //Else process only requirements that have a delay lower than the current progress
+                if (entry.getKey() <= this.recipeProgressTime / this.recipeTotalTime || this.isLastRecipeTick) {
+                    this.currentProcessRequirements.addAll(entry.getValue());
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        for (Iterator<RequirementWithFunction<?, ?, ?>> iterator = this.currentProcessRequirements.iterator(); iterator.hasNext(); )
+        {
+            RequirementWithFunction<?, ?, ?> requirement = iterator.next();
+            if (!requirement.requirement().shouldSkip(this.rand, this.context))
+            {
+                CraftingResult result = requirement.process(this.tile.getComponentManager(), this.context);
+                if(!result.isSuccess())
+                {
+                    this.setError(result.getMessage()); 
+                    return;
+                }
+            }
+            iterator.remove();
+        }
+
+        this.setRunning();
+        this.phase = Phase.PROCESS_TICK;
+    }
+
+    @Overwrite
+    public void processTickRequirements()
+    {
+        if(this.currentProcessRequirements.isEmpty())
+        this.currentProcessRequirements.addAll(this.requirementList.getTickableRequirements());
+
+        for (Iterator<RequirementWithFunction<?, ?, ?>> iterator = this.currentProcessRequirements.iterator(); iterator.hasNext();)
+        {
+            RequirementWithFunction<?, ?, ?> requirement = iterator.next();
+            if (!requirement.requirement().shouldSkip(this.rand, this.context))
+            {
+                CraftingResult result = requirement.process(this.tile.getComponentManager(), this.context);
+                if(!result.isSuccess())
+                {
+                    this.setError(result.getMessage());
+                    return;
+                }
+            }
+            iterator.remove();
+        }
+
+        this.setRunning();
+        this.phase = Phase.CONDITIONS;
+        this.recipeProgressTime += this.context.getModifiedSpeed();
     }
 }

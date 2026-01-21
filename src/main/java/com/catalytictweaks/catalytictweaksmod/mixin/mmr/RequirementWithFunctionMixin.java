@@ -8,6 +8,8 @@ import es.degrassi.mmreborn.api.crafting.requirement.IRequirementList.Requiremen
 import es.degrassi.mmreborn.api.crafting.requirement.RecipeRequirement;
 import es.degrassi.mmreborn.common.machine.MachineComponent;
 import es.degrassi.mmreborn.common.manager.ComponentManager;
+import es.degrassi.mmreborn.common.manager.crafting.RequirementList;
+
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -15,7 +17,7 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.List;
 
-@Mixin(targets = "es.degrassi.mmreborn.common.manager.crafting.RequirementList$RequirementWithFunction")
+@Mixin(value = RequirementList.RequirementWithFunction.class)
 public abstract class RequirementWithFunctionMixin<R extends IRequirement<C, T>, C extends MachineComponent<T>, T> {
 
     @Shadow @Final protected RecipeRequirement<C, R, T> requirement;

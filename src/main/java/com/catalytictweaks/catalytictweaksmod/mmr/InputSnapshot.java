@@ -3,22 +3,31 @@ package com.catalytictweaks.catalytictweaksmod.mmr;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import es.degrassi.mmreborn.api.capability.EntityHandler;
 import es.degrassi.mmreborn.api.crafting.requirement.IRequirement;
+import es.degrassi.mmreborn.common.crafting.requirement.RequirementDimension;
 import es.degrassi.mmreborn.common.crafting.requirement.RequirementEnergy;
 import es.degrassi.mmreborn.common.crafting.requirement.RequirementEnergyPerTick;
 import es.degrassi.mmreborn.common.crafting.requirement.RequirementFluid;
 import es.degrassi.mmreborn.common.crafting.requirement.RequirementFuel;
 import es.degrassi.mmreborn.common.crafting.requirement.RequirementItem;
+import es.degrassi.mmreborn.common.crafting.requirement.RequirementRedstone;
+import es.degrassi.mmreborn.common.crafting.requirement.entity.RequirementEntity;
 import es.degrassi.mmreborn.common.machine.IOType;
+import es.degrassi.mmreborn.common.machine.component.DimensionComponent;
 import es.degrassi.mmreborn.common.machine.component.EnergyComponent;
+import es.degrassi.mmreborn.common.machine.component.EntityComponent;
 import es.degrassi.mmreborn.common.machine.component.FluidComponent;
 import es.degrassi.mmreborn.common.machine.component.FuelComponent;
 import es.degrassi.mmreborn.common.machine.component.ItemComponent;
+import es.degrassi.mmreborn.common.machine.component.RedstoneComponent;
+import es.degrassi.mmreborn.common.manager.ComponentManager;
 import es.degrassi.mmreborn.common.registration.ComponentRegistration;
 import es.degrassi.mmreborn.mekanism.common.crafting.requirement.RequirementChemical;
 import es.degrassi.mmreborn.mekanism.common.machine.component.ChemicalComponent;
 import mekanism.api.chemical.Chemical;
 import mekanism.api.chemical.ChemicalStack;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluid;
@@ -61,6 +70,10 @@ public class InputSnapshot {
     //private long sourceStored = 0;
     private long fuelStored = 0;
     private final List<InnerInputGasSnapshot> gasList = new ArrayList<>();
+
+    private int redstoneStored = 0;
+    private ResourceLocation currentDimension;
+    private final List<EntityHandler> entityHandlers = new ArrayList<>();
 
     public InputSnapshot(IComponentManager manager) {
         aggregateInputs(manager);
@@ -114,6 +127,27 @@ public class InputSnapshot {
                             addChemicalToSnapshot(stack.getChemical(), stack.getAmount());
                         }
                     }
+                }
+            });
+
+            manager.getComponents(ComponentRegistration.COMPONENT_REDSTONE.get(), IOType.INPUT).forEach(comp -> {
+                if (comp instanceof RedstoneComponent redstoneComp) {
+                    int signal = redstoneComp.getContainerProvider();
+                    if (signal > this.redstoneStored) {
+                        this.redstoneStored = signal;
+                    }
+                }
+            });
+
+            manager.getComponents(ComponentRegistration.COMPONENT_DIMENSION.get(), IOType.INPUT).forEach(comp -> {
+                if (comp instanceof DimensionComponent dimComp) {
+                    this.currentDimension = dimComp.getContainerProvider();
+                }
+            });
+
+            manager.getComponents(ComponentRegistration.COMPONENT_ENTITY.get(), IOType.INPUT).forEach(comp -> {
+                if (comp instanceof EntityComponent entityComp) {
+                    this.entityHandlers.add(entityComp.getContainerProvider());
                 }
             });
         } catch (Exception e) {
@@ -213,6 +247,22 @@ public class InputSnapshot {
             if (requiredEnergy == 0) return Integer.MAX_VALUE;
             return (int) (energyStored / requiredEnergy); 
         }
+        else if (requirement instanceof RequirementRedstone redReq) {
+            if (redReq.getMode() == IOType.OUTPUT) return Integer.MAX_VALUE;
+            return (this.redstoneStored == redReq.getAmount()) ? Integer.MAX_VALUE : 0;
+        }
+        else if (requirement instanceof RequirementDimension dimReq) {
+            if (this.currentDimension == null) return 0;
+            boolean match = dimReq.filter().contains(this.currentDimension) != dimReq.blacklist();
+            return match ? Integer.MAX_VALUE : 0;
+        }
+        else if (requirement instanceof RequirementEntity entityReq) {
+            if (entityReq.getMode() == IOType.OUTPUT) return Integer.MAX_VALUE;
+            if (!this.entityHandlers.isEmpty()) {
+                return Integer.MAX_VALUE;
+            }
+            return 0;
+        }
         // else if ((Object) requirement instanceof RequirementSource sourceReq) {
         //     long requiredVal = sourceReq.required;
         //     if (requiredVal == 0) return Integer.MAX_VALUE;
@@ -225,14 +275,21 @@ public class InputSnapshot {
     public boolean contains(IRequirement<?, ?> requirement) {
         if(requirement.getMode() == IOType.OUTPUT) return true;
         if (requirement instanceof RequirementItem itemReq) {
-            if (itemReq.getMode() == IOType.OUTPUT) return true;
             var ingredient = itemReq.getIngredient();
+            int requiredCount = ingredient.count();
+            if (requiredCount == 0) return true;
+
+            long totalAvailable = 0;
+            Set<Item> checkedItems = Sets.newHashSet();
+
             for (ItemStack validStack : ingredient.getItems()) {
-                if (itemMap.containsKey(validStack.getItem()) && itemMap.get(validStack.getItem()) > 0) {
-                    return true;
+                Item item = validStack.getItem();
+                if (checkedItems.add(item)) {
+                    totalAvailable += itemMap.getOrDefault(item, 0);
                 }
             }
-            return false;
+            
+            return totalAvailable >= requiredCount;
         }
         else if (requirement instanceof RequirementFluid fluidReq) {
             var ingredient = fluidReq.getIngredient();
@@ -259,6 +316,16 @@ public class InputSnapshot {
         }
         else if (requirement instanceof RequirementEnergyPerTick) {
             return this.energyStored > 0;
+        }
+        else if (requirement instanceof RequirementRedstone redReq) {
+            return this.redstoneStored >= redReq.getAmount();
+        }
+        else if (requirement instanceof RequirementDimension dimReq) {
+            return this.currentDimension != null && 
+                   (dimReq.filter().contains(this.currentDimension) != dimReq.blacklist());
+        }
+        else if (requirement instanceof RequirementEntity) {
+            return !this.entityHandlers.isEmpty();
         }
         // else if ((Object)requirement instanceof RequirementSource) {
         //     return this.sourceStored > 0;

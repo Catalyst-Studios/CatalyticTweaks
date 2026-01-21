@@ -6,7 +6,9 @@
   "mixins": [
     "mmr.RecipeCheckerAccessor",
     "mmr.MachineProcessorCoreAccessor",
+    "mmr.FluidComponentAccessor",
     "mmr.FluidComponentMixin",
+    "mmr.BlockIngredientMixin",
     "mmr.ComponentManagerMixin",
     "mmr.RecipeRequirementMixin",
     "mmr.MachineRecipeFinderMixin",
