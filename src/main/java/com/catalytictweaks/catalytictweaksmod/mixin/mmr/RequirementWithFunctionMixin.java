@@ -6,6 +6,7 @@ import es.degrassi.mmreborn.api.crafting.ICraftingContext;
 import es.degrassi.mmreborn.api.crafting.requirement.IRequirement;
 import es.degrassi.mmreborn.api.crafting.requirement.IRequirementList.RequirementFunction;
 import es.degrassi.mmreborn.api.crafting.requirement.RecipeRequirement;
+import es.degrassi.mmreborn.common.machine.IOType;
 import es.degrassi.mmreborn.common.machine.MachineComponent;
 import es.degrassi.mmreborn.common.manager.ComponentManager;
 import es.degrassi.mmreborn.common.manager.crafting.RequirementList;
@@ -40,6 +41,11 @@ public abstract class RequirementWithFunctionMixin<R extends IRequirement<C, T>,
         {
             C cachedComponent = (C) cachedObj;
             return this.function.process(cachedComponent, context);
+        }
+
+        if(requirement.requirement().getMode() == IOType.NONE)
+        {
+            return this.function.process(null, context);
         }
 
 

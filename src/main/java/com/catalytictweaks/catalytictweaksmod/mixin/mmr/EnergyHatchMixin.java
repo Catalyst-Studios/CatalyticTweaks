@@ -25,6 +25,10 @@ public abstract class EnergyHatchMixin extends BlockEntitySynchronized {
 
     @Unique
     private long lastSyncTick = 0;
+    @Unique
+    private int lastComparatorSignal = -1;
+    @Unique
+    private long lastSaveTick = 0;
 
     public EnergyHatchMixin(net.minecraft.world.level.block.entity.BlockEntityType<?> type, BlockPos pos, net.minecraft.world.level.block.state.BlockState blockState) {
         super(type, pos, blockState);
@@ -41,7 +45,7 @@ public abstract class EnergyHatchMixin extends BlockEntitySynchronized {
             
             this.onContentsChange(); 
             syncEnergyIfNeeded();
-            this.setChanged(); 
+            markDirty(); 
         }
         return insertable;
     }
@@ -62,7 +66,7 @@ public abstract class EnergyHatchMixin extends BlockEntitySynchronized {
             
             this.onContentsChange();
             syncEnergyIfNeeded();
-            this.setChanged();
+            markDirty();
         }
         return extractable;
     }
@@ -82,6 +86,32 @@ public abstract class EnergyHatchMixin extends BlockEntitySynchronized {
                     new ChunkPos(this.getBlockPos()), 
                     new SUpdateEnergyComponentPacket(this.energy, this.getBlockPos())
                 );
+            }
+        }
+    }
+
+    @Unique
+    private void markDirty() {
+        if(this.level == null) return;
+        long currentTick = this.level.getGameTime();
+
+        int newSignal = 0;
+        if(this.size.maxEnergy > 0)
+        {
+            newSignal = (int) ((this.energy / (double) this.size.maxEnergy) * 15.0);
+        }
+
+        boolean signalChanged = newSignal != lastComparatorSignal;
+        boolean timeToSave = (currentTick - lastSaveTick) > 200;
+
+        if(signalChanged || timeToSave)
+        {
+            this.setChanged();
+            
+            this.lastComparatorSignal = newSignal;
+            if(timeToSave)
+            {
+                this.lastSaveTick = currentTick;
             }
         }
     }
