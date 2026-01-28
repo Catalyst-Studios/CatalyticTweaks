@@ -6,6 +6,7 @@ import es.degrassi.mmreborn.api.crafting.ICraftingContext;
 import es.degrassi.mmreborn.api.crafting.requirement.IRequirement;
 import es.degrassi.mmreborn.api.crafting.requirement.IRequirementList.RequirementFunction;
 import es.degrassi.mmreborn.api.crafting.requirement.RecipeRequirement;
+import es.degrassi.mmreborn.common.crafting.requirement.entity.RequirementCheckEntity;
 import es.degrassi.mmreborn.common.machine.IOType;
 import es.degrassi.mmreborn.common.machine.MachineComponent;
 import es.degrassi.mmreborn.common.manager.ComponentManager;
@@ -40,12 +41,26 @@ public abstract class RequirementWithFunctionMixin<R extends IRequirement<C, T>,
         if(cachedObj != null)
         {
             C cachedComponent = (C) cachedObj;
-            return this.function.process(cachedComponent, context);
+            try
+            {
+                return this.function.process(cachedComponent, context);
+            }
+            catch(Exception e)
+            {
+                return CraftingResult.error(net.minecraft.network.chat.Component.literal("Mixin Error: RecipeRequirement crashed on cached"));
+            }
         }
 
-        if(requirement.requirement().getMode() == IOType.NONE)
+        if(requirement.requirement().getMode() == IOType.NONE && !(requirement.requirement() instanceof RequirementCheckEntity))
         {
-            return this.function.process(null, context);
+            try
+            {
+                return this.function.process(null, context);
+            }
+            catch(Exception e)
+            {
+                return CraftingResult.error(net.minecraft.network.chat.Component.literal("Mixin Error: RecipeRequirement crashed on NONE"));
+            }
         }
 
 
@@ -63,17 +78,27 @@ public abstract class RequirementWithFunctionMixin<R extends IRequirement<C, T>,
 
         C component = components.get(0);
         
-        if (components.size() > 1) {
-            for (int i = 1; i < components.size(); i++) {
+        if(components.size() > 1)
+        {
+            for(int i = 1; i < components.size(); i++)
+            {
                 C next = components.get(i);
-                if (component.canMerge(next)) {
+                if(component.canMerge(next))
+                {
                     component = component.merge(next);
                 }
             }
         }
 
         machineCache.put(manager, component);
-
-        return this.function.process(component, context);
+        try
+        {
+            return this.function.process(component, context);
+        }
+        catch(Exception e)
+        {
+            return CraftingResult.error(net.minecraft.network.chat.Component.literal("Mixin Error: RecipeRequirement crashed on last return"));
+        }
+        
     }
 }
