@@ -64,49 +64,60 @@ public class MachineRecipeFinderMixin implements IMachineRecipeFinder{
     @Override
     public Optional<Pair<RecipeHolder<MachineRecipe>, Integer>> findRecipe(boolean immediately) {
         if (tile.getLevel() == null || !this.core.isActive())
+        {
+            //System.out.println("Returning empty top");
             return Optional.empty();
+        }
 
-        if (immediately || this.recipeCheckCooldown-- <= 0) {
+        if(immediately || this.recipeCheckCooldown-- <= 0)
+        {
             this.recipeCheckCooldown = this.baseCooldown;
             
-            if (this.componentChanged || immediately) {
-                this.okToCheck.clear();
-                this.okToCheck.addAll(this.recipes);
-            }
+            this.okToCheck.clear();
+            this.okToCheck.addAll(this.recipes);
 
             InputSnapshot snapshot = new InputSnapshot((IComponentManager) this.tile.getComponentManager());
 
             Pair<RecipeHolder<MachineRecipe>, Integer> bestMatch = null;
 
             Iterator<RecipeChecker<MachineRecipe>> iterator = this.okToCheck.iterator();
-            while (iterator.hasNext()) {
+            //System.out.println(this.okToCheck.size());
+            while(iterator.hasNext())
+            {
                 RecipeChecker<MachineRecipe> checker = iterator.next();
-                
-                if (!this.componentChanged && checker.isInventoryRequirementsOnly() && !immediately)
-                    continue;
+                //System.out.println(checker.getRecipe().id());
+                //if(!this.componentChanged && checker.isInventoryRequirementsOnly() && !immediately)
+                //    continue;
 
                 MachineRecipe recipe = checker.getRecipe().value();
                 boolean logicCheck = true;
                 RecipeCheckerAccessor checkerAccess = (RecipeCheckerAccessor) checker;
 
-                for (var recipeRequirement : checkerAccess.getInventoryRequirements()) {
+                for(var recipeRequirement : checkerAccess.getInventoryRequirements())
+                {
                     IRequirement<?, ?> rawReq = recipeRequirement.requirement();
-                    if (!snapshot.contains(rawReq)) {
+                    if(!snapshot.contains(rawReq))
+                    {
                         logicCheck = false;
+                        //System.out.println("Checks out");
                         break;
                     }
                 }
 
-                if (logicCheck) {
+                if(logicCheck)
+                {
                     int maxCrafts = Integer.MAX_VALUE;
                     boolean inputsSufficient = true;
 
-                    for (RecipeRequirement<?, ?, ?> req : recipe.getRequirements()) {
-                        if (req.requirement().getMode() != IOType.INPUT) continue;
+                    for(RecipeRequirement<?, ?, ?> req : recipe.getRequirements())
+                    {
+                        if(req.requirement().getMode() != IOType.INPUT) continue;
                         int matches = snapshot.calculateMatches(req.requirement());
                         
-                        if (matches == 0) {
+                        if(matches == 0)
+                        {
                             inputsSufficient = false;
+                            //System.out.println("Not enough items");
                             break;
                         }
 
@@ -117,32 +128,46 @@ public class MachineRecipeFinderMixin implements IMachineRecipeFinder{
                     {
                         if (maxCrafts == Integer.MAX_VALUE) maxCrafts = 1;
 
-                        if (bestMatch == null) {
+                        if(bestMatch == null)
+                        {
                             bestMatch = Pair.of(checker.getRecipe(), maxCrafts);
-                        } else {
+                        }
+                        else
+                        {
                             int currentPriority = recipe.getConfiguredPriority(); 
                             int bestPriority = bestMatch.getFirst().value().getConfiguredPriority();
 
-                            if (currentPriority > bestPriority) {
+                            if(currentPriority > bestPriority)
+                            {
                                 bestMatch = Pair.of(checker.getRecipe(), maxCrafts);
                             }
-                            else if (currentPriority == bestPriority) {
-                                if (maxCrafts > bestMatch.getSecond()) {
+                            else if(currentPriority == bestPriority)
+                            {
+                                if(maxCrafts > bestMatch.getSecond())
+                                {
                                     bestMatch = Pair.of(checker.getRecipe(), maxCrafts);
                                 }
                             }
                         }
                         continue; 
                     }
+                    else
+                    {
+                        //System.out.println("Not enough inputs");
+                    }
                 }
 
-                if (!checker.isInventoryRequirementsOk()) iterator.remove();
+                if(!logicCheck)
+                {
+                    iterator.remove();
+                }
             }
 
             this.componentChanged = false;
-
+            //System.out.println("Returning ofNullable: " + bestMatch);
             return Optional.ofNullable(bestMatch);
         }
+        //System.out.println("Returning empty final");
         return Optional.empty();
     }
 }

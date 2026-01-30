@@ -46,15 +46,17 @@ public abstract class MachineProcessorMixin
             {
                 found = finders.findRecipe(false);
             }
-
+            //System.out.println("Recipe found: " + found.isPresent());
             if(found.isPresent())
             {
                 RecipeHolder<MachineRecipe> recipe = found.get().getFirst();
-
+                //System.out.println(recipe.id());
+                //System.out.println(found.get().getSecond());
                 for(int i = 0; i < found.get().getSecond() && i < cores.size(); i++)
                 {
                     if(cores.get(i).hasActiveRecipe()) continue;
                     MachineProcessorCore core = cores.get(i);
+                    //System.out.println(core.getCore());
                     MachineProcessorCoreAccessor coreAccess = (MachineProcessorCoreAccessor) core;
                     coreAccess.callSetRecipe(recipe);
                     coreAccess.setComponentChanged(false);
@@ -62,12 +64,17 @@ public abstract class MachineProcessorMixin
                     coreAccess.callCheckConditions();
                     if(coreAccess.getPhase() != Phase.PROCESS)
                     {
+                        //System.out.println("Core has been resetted");
                         cores.get(i).reset();
                         break;
                     }
                 }
             }
         }
+
+        // System.out.println(masterCore.hasActiveRecipe());
+        // System.out.println(masterCore.isActive());
+        // System.out.println(masterCore.getRecipeProgressTime());
 
         this.cores.forEach(MachineProcessorCore::tick);
 
@@ -82,7 +89,8 @@ public abstract class MachineProcessorMixin
     @Overwrite
     public void setMachineInventoryChanged() {
 
-        if (this.tile.getStatus().isCrafting()) {
+        if(this.tile.getStatus().isCrafting())
+        {
             return;
         }
 

@@ -17,6 +17,7 @@
     "mmr.RequirementWithFunctionMixin",
     "mmr.MachineProcessorCoreMixin",
     "mmr.MachineProcessorMixin",
+    "mmr.StructureRendererMixin",
     "pipez.PipezMixin"
   ],
   "client": [],
