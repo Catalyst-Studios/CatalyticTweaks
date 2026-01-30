@@ -42,6 +42,8 @@ neoForge {
         minecraftVersion = project.parchment_minecraft_version
     }
 
+    accessTransformers.from project.files('src/main/resources/META-INF/accesstransformer.cfg')
+
     runs {
         client {
             client()
@@ -94,6 +96,8 @@ dependencies {
     implementation "curse.maven:mekanism-268560:7132168"
     implementation "curse.maven:spark-361579:6225208"
     implementation "curse.maven:jade-324717:7428884"
+    implementation "curse.maven:modular-machinery-reborn-mekanism-1131856:6394999"
+    //implementation "curse.maven:modular-machinery-reborn-ars-nouveau-1132269:6405708"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
