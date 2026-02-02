@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
+import com.catalytictweaks.catalytictweaksmod.mixin.mmr.accessors.MachineProcessorCoreAccessor;
 import com.catalytictweaks.catalytictweaksmod.mmr.IMachineRecipeFinder;
 import com.mojang.datafixers.util.Pair;
 
@@ -78,16 +79,27 @@ public abstract class MachineProcessorMixin
 
         this.cores.forEach(MachineProcessorCore::tick);
 
-        if(this.tile.getStatus() != MachineStatus.IDLE &&
-           this.cores.stream().noneMatch(MachineProcessorCore::hasActiveRecipe) &&
-           !this.tile.getStatus().isMissingStructure())
+        if(this.tile.getStatus() != MachineStatus.IDLE && !this.tile.getStatus().isMissingStructure())
         {
-            this.tile.setStatus(MachineStatus.IDLE);
+            boolean hasActive = false;
+            for(MachineProcessorCore core : this.cores)
+            {
+                if(core.hasActiveRecipe())
+                {
+                    hasActive = true;
+                    break;
+                }
+            }
+            if(!hasActive)
+            {
+                this.tile.setStatus(MachineStatus.IDLE);
+            }
         }
     }
 
     @Overwrite
-    public void setMachineInventoryChanged() {
+    public void setMachineInventoryChanged()
+    {
 
         if(this.tile.getStatus().isCrafting())
         {
@@ -95,6 +107,9 @@ public abstract class MachineProcessorMixin
         }
 
         this.tile.setStatus(MachineStatus.IDLE);
-        this.cores.forEach(MachineProcessorCore::setComponentChanged);
+        for(var core: this.cores)
+        {
+            core.setComponentChanged();
+        }
     }
 }

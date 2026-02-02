@@ -1,9 +1,9 @@
 package com.catalytictweaks.catalytictweaksmod.mixin.mmr;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
@@ -25,7 +25,8 @@ import es.degrassi.mmreborn.common.manager.ComponentManager;
 import net.minecraft.core.BlockPos;
 
 @Mixin(ComponentManager.class)
-public abstract class ComponentManagerMixin implements IComponentManager {
+public abstract class ComponentManagerMixin implements IComponentManager
+{
 
     @Shadow @Final protected LoadingCache<BlockPos, Optional<MachineComponent<?>>> fC;
     @Shadow @Final protected LoadingCache<ComponentType<?>, Map<IOType, List<MachineComponent<?>>>> fCV;
@@ -35,21 +36,33 @@ public abstract class ComponentManagerMixin implements IComponentManager {
     @SuppressWarnings("hiding")
     @Shadow public abstract <C extends MachineComponent<T>, T> Optional<C> getComponent(ComponentType<T> type, IOType mode);
 
-    @SuppressWarnings("hiding")
+    @SuppressWarnings({ "hiding", "rawtypes" })
     @Override
     public <C extends MachineComponent<T>, T> List<C> getComponents(ComponentType<T> type, IOType mode) {
         try
         {
             var map = fCV.get(type);
-            List<MachineComponent<?>> list = map.get(mode);
-            
-            if(list == null || list.isEmpty()) return Collections.emptyList();
-            
-            return list.stream()
-                .map(c -> (C) c)
-                .filter(Objects::nonNull)
-                .sorted()
-                .toList();
+            var rawList = map.get(mode);
+
+            if(rawList == null || rawList.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+
+            List<C> result = new ArrayList<>(rawList.size());
+
+            for(MachineComponent<?> comp : rawList)
+            {
+                if(comp != null)
+                {
+                    result.add((C) comp);
+                }
+            }
+
+            Collections.sort((List) result);
+
+            return result;
+
         }
         catch(ExecutionException e)
         {

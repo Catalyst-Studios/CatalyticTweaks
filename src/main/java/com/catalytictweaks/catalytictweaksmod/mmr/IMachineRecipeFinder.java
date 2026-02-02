@@ -5,6 +5,7 @@ import com.mojang.datafixers.util.Pair;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import es.degrassi.mmreborn.common.crafting.MachineRecipe;
 
-public interface IMachineRecipeFinder {
+public interface IMachineRecipeFinder
+{
     Optional<Pair<RecipeHolder<MachineRecipe>, Integer>> findRecipe(boolean immediately);
 }

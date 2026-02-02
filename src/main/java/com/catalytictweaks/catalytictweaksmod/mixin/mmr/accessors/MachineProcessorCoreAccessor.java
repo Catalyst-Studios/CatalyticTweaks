@@ -1,4 +1,4 @@
-package com.catalytictweaks.catalytictweaksmod.mixin.mmr;
+package com.catalytictweaks.catalytictweaksmod.mixin.mmr.accessors;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
@@ -11,7 +11,8 @@ import es.degrassi.mmreborn.common.manager.crafting.Phase;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 @Mixin(MachineProcessorCore.class)
-public interface MachineProcessorCoreAccessor {
+public interface MachineProcessorCoreAccessor
+{
     @Accessor("recipeFinder") 
     MachineRecipeFinder getRecipeFinder();
 

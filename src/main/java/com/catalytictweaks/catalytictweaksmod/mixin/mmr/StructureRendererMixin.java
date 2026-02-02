@@ -32,6 +32,7 @@ public abstract class StructureRendererMixin
     @Shadow
     protected abstract void putQuadData(int color, float alpha, VertexConsumer consumer, PoseStack.Pose pose, BakedQuad quad, float brightness0, float brightness1, float brightness2, float brightness3, int lightmap0, int lightmap1, int lightmap2, int lightmap3, int packedOverlay);
 
+    @SuppressWarnings("null")
     @Overwrite
     private void renderTransparentBlock(BlockEntityRendererProvider.Context context, Level level, BlockPos pos, PartialBlockState state,
                                         PoseStack matrix,

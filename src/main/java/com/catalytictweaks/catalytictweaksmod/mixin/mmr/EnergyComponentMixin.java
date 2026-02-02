@@ -10,14 +10,19 @@ import org.spongepowered.asm.mixin.Shadow;
 import com.catalytictweaks.catalytictweaksmod.mmr.CompositeEnergyHandler;
 
 @Mixin(EnergyComponent.class)
-public abstract class EnergyComponentMixin extends MachineComponent<IEnergyHandler> {
+public abstract class EnergyComponentMixin extends MachineComponent<IEnergyHandler>
+{
 
     @Shadow private IEnergyHandler handler;
 
-    public EnergyComponentMixin() { super(null); }
+    public EnergyComponentMixin()
+    {
+        super(null);
+    }
 
     @Overwrite(remap = false)
-    public <C extends MachineComponent<IEnergyHandler>> C merge(C c) {
+    public <C extends MachineComponent<IEnergyHandler>> C merge(C c)
+    {
         EnergyComponent other = (EnergyComponent) (Object) c;
 
         CompositeEnergyHandler newHandler = new CompositeEnergyHandler(this.handler, other.getContainerProvider());

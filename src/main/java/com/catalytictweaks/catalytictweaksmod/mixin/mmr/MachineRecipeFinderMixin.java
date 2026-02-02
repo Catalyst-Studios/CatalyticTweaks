@@ -1,5 +1,6 @@
 package com.catalytictweaks.catalytictweaksmod.mixin.mmr;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -9,6 +10,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
+import com.catalytictweaks.catalytictweaksmod.mixin.mmr.accessors.RecipeCheckerAccessor;
 import com.catalytictweaks.catalytictweaksmod.mmr.IComponentManager;
 import com.catalytictweaks.catalytictweaksmod.mmr.IMachineRecipeFinder;
 import com.catalytictweaks.catalytictweaksmod.mmr.InputSnapshot;
@@ -29,7 +31,8 @@ import es.degrassi.mmreborn.common.util.Comparators;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 @Mixin(MachineRecipeFinder.class)
-public class MachineRecipeFinderMixin implements IMachineRecipeFinder{
+public class MachineRecipeFinderMixin implements IMachineRecipeFinder
+{
 
     @Shadow protected @Final MachineControllerEntity tile;
     @Shadow protected @Final int baseCooldown;
@@ -41,28 +44,40 @@ public class MachineRecipeFinderMixin implements IMachineRecipeFinder{
     @Shadow protected @Final MachineProcessorCore core;
 
     @Overwrite
-    @SuppressWarnings("null")
+    @SuppressWarnings({ "null", "rawtypes" })
     public void init()
     {
-        if (tile.getLevel() == null)
-            throw new IllegalStateException("Broken machine " + tile.getId() + " doesn't have a world");
+        var allRecipes = tile.getLevel().getRecipeManager()
+                         .getAllRecipesFor(RecipeRegistration.RECIPE_TYPE.get());
+
+        var targetId = tile.getId();
+
+        List<RecipeHolder<MachineRecipe>> filteredRecipes = new ArrayList<>(allRecipes.size());
+
+        for(RecipeHolder<MachineRecipe> recipe : allRecipes)
+        {
+            if(recipe.value().getOwningMachineIdentifier().equals(targetId))
+            {
+                filteredRecipes.add(recipe);
+            }
+        }
+        filteredRecipes.sort(Comparators::compare);
+
+        List<RecipeChecker<MachineRecipe>> finalRecipes = new ArrayList<>(filteredRecipes.size());
         
-        this.recipes = tile.getLevel()
-                .getRecipeManager()
-                .getAllRecipesFor(RecipeRegistration.RECIPE_TYPE.get())
-                .stream()
-                .filter(recipe -> recipe.value().getOwningMachineIdentifier().equals(tile.getId()))
-                .sorted(Comparators::compareRecipes)
-                .map(RecipeChecker::new)
-                .toList()
-                .reversed();
-                
+        for(int i = filteredRecipes.size() - 1; i >= 0; i--)
+        {
+            finalRecipes.add(new RecipeChecker(filteredRecipes.get(i)));
+        }
+        this.recipes = finalRecipes;
+        
         this.okToCheck = Lists.newArrayList();
         this.recipeCheckCooldown = tile.getLevel().random.nextInt(this.baseCooldown);
     }
 
     @Override
-    public Optional<Pair<RecipeHolder<MachineRecipe>, Integer>> findRecipe(boolean immediately) {
+    public Optional<Pair<RecipeHolder<MachineRecipe>, Integer>> findRecipe(boolean immediately)
+    {
         if (tile.getLevel() == null || !this.core.isActive())
         {
             //System.out.println("Returning empty top");

@@ -23,7 +23,8 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 @Mixin(value = RequirementList.RequirementWithFunction.class)
-public abstract class RequirementWithFunctionMixin<R extends IRequirement<C, T>, C extends MachineComponent<T>, T> {
+public abstract class RequirementWithFunctionMixin<R extends IRequirement<C, T>, C extends MachineComponent<T>, T>
+{
 
     @Shadow @Final protected RecipeRequirement<C, R, T> requirement;
     @Shadow @Final protected RequirementFunction<C> function;
@@ -32,7 +33,8 @@ public abstract class RequirementWithFunctionMixin<R extends IRequirement<C, T>,
             Collections.synchronizedMap(new WeakHashMap<>());
 
     @Overwrite
-    public CraftingResult process(ComponentManager manager, ICraftingContext context) {
+    public CraftingResult process(ComponentManager manager, ICraftingContext context)
+    {
         
         Map<ComponentManager, Object> machineCache = GLOBAL_CACHE.computeIfAbsent(this, k -> Collections.synchronizedMap(new WeakHashMap<>()));
 
