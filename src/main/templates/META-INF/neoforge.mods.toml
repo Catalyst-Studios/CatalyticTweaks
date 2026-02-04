@@ -23,7 +23,7 @@ license="MIT"
 modId="catalytictweaks" #mandatory
 
 # The version number of the mod
-version="0.1" #mandatory
+version="0.2" #mandatory
 
 # A display name for the mod
 displayName="Catalytic Tweaks" #mandatory
@@ -32,19 +32,19 @@ displayName="Catalytic Tweaks" #mandatory
 #updateJSONURL="https://change.me.example.invalid/updates.json" #optional
 
 # A URL for the "homepage" for this mod, displayed in the mod UI
-#displayURL="https://change.me.to.your.mods.homepage.example.invalid/" #optional
+displayURL="https://www.curseforge.com/minecraft/mc-mods/catalytic-tweaks" #optional
 
 # A file name (in the root of the mod JAR) containing a logo for display
 #logoFile="examplemod.png" #optional
 
 # A text field displayed in the mod UI
-#credits="" #optional
+credits="To MMR author and Pipez author for having their code visible" #optional
 
 # A text field displayed in the mod UI
-authors="Apex Slayer" #optional
+authors="Apex Slayer, Titop54" #optional
 
 # The description text for the mod (multi line!) (#mandatory)
-description='''mod changes for Catalyst studios'''
+description='''Mod to make changes to multiple mods. Currently to MMR and Pipez'''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
 [[mixins]]
@@ -84,6 +84,7 @@ type="required"
 versionRange="${minecraft_version_range}"
 ordering="NONE"
 side="BOTH"
+
 # Pipez mod dependency
 [[dependencies.catalytictweaks]]
 modId="Pipez" # the modid of the Pipez mod
@@ -91,6 +92,16 @@ type="optional" # Pipez is a required dependency
 versionRange="[1.16.5-0.5.0]" # version range for Pipez mod
 ordering="NONE" # No specific ordering for the dependency
 side="BOTH" # Applies to both client and server side
+
+# MMR mod
+[[dependencies.catalytictweaks]]
+modId="modular_machinery_reborn"
+type="optional"
+versionRange="[3.0.5]" # version range for Pipez mod
+ordering="NONE" # No specific ordering for the dependency
+side="BOTH" # Applies to both client and server side
+
+
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares
 # that your mod requires GL version 3.2 or higher. Other features will be added. They are side aware so declaring this won't
 # stop your mod loading on the server for example.

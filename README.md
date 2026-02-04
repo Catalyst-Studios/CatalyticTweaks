@@ -1,25 +1,13 @@
 
-Installation information
-=======
+## CatalyticTweaks
 
-This template repository can be directly cloned to get you started with a new
-mod. Simply create a new repository cloned from this one, by following the
-instructions provided by [GitHub](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
+A simple aimed to do some general changes to modpacks of Catalyst Studios.
 
-Once you have your clone, simply open the repository in the IDE of your choice. The usual recommendation for an IDE is either IntelliJ IDEA or Eclipse.
+Currently there are 2 mods supported:
 
-If at any point you are missing libraries in your IDE, or you've run into problems you can
-run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
-{this does not affect your code} and then start the process again.
+- Pipez: Allows all upgrades to have all options (no need for diamond upgrade when you just need redstone on a basic one). Fully customizable
 
-Mapping Names:
-============
-By default, the MDK is configured to use the official mapping names from Mojang for methods and fields 
-in the Minecraft codebase. These names are covered by a specific license. All modders should be aware of this
-license. For the latest license text, refer to the mapping file itself, or the reference copy here:
-https://github.com/NeoForged/NeoForm/blob/main/Mojang.md
+- Modular Machinery Reborn: Changes parallel (1 recipe per machine), changes preview and other changes to make it less painful to TPS (original mod has methods to reduce the lag, just that on 64+ parallel it starts to notice). Able to do 2k parallel with 20 tps. Also disable the void items on fail.
 
-Additional Resources: 
-==========
-Community Documentation: https://docs.neoforged.net/  
-NeoForged Discord: https://discord.neoforged.net/
+# License
+Mod is licensed under MIT, so you can use it on your modpack.
