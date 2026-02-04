@@ -18,6 +18,7 @@
     "mmr.MachineProcessorCoreMixin",
     "mmr.MachineProcessorMixin",
     "mmr.StructureRendererMixin",
+    "mmr.ControllerContainerMixin",
     "pipez.PipezMixin"
   ],
   "client": [],
