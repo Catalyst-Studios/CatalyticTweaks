@@ -19,6 +19,8 @@
     "mmr.MachineProcessorMixin",
     "mmr.StructureRendererMixin",
     "mmr.ControllerContainerMixin",
+    "create.MixinBigOutlines",
+    "jei.Runtime",
     "pipez.PipezMixin"
   ],
   "client": [],

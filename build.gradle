@@ -129,6 +129,9 @@ dependencies
     compileOnly localRuntime("curse.maven:jade-324717:7428884")
     compileOnly localRuntime("curse.maven:modular-machinery-reborn-mekanism-1131856:6394999")
     compileOnly localRuntime("curse.maven:create-328085:7408951")
+    compileOnly localRuntime("curse.maven:jei-238222:7428957")
+    compileOnly localRuntime("curse.maven:kubejs-238086:7278501")
+    
     //compileOnly localRuntime("curse.maven:modular-machinery-reborn-ars-nouveau-1132269:6405708")
 }
 
