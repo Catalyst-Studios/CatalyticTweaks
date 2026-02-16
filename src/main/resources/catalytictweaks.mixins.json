@@ -22,6 +22,7 @@
     "create.MixinBigOutlines",
     "jei.Runtime",
     "jei.Entry",
+    "emi.Runtime",
     "pipez.PipezMixin"
   ],
   "client": [],
