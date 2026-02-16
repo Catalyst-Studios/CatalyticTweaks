@@ -21,6 +21,7 @@
     "mmr.ControllerContainerMixin",
     "create.MixinBigOutlines",
     "jei.Runtime",
+    "jei.Entry",
     "pipez.PipezMixin"
   ],
   "client": [],
