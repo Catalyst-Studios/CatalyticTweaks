@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 
 import com.catalytictweaks.catalytictweaksmod.mixin.mmr.accessors.RecipeCheckerAccessor;
@@ -30,6 +31,7 @@ import es.degrassi.mmreborn.common.registration.RecipeRegistration;
 import es.degrassi.mmreborn.common.util.Comparators;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
+@Pseudo
 @Mixin(MachineRecipeFinder.class)
 public class MachineRecipeFinderMixin implements IMachineRecipeFinder
 {

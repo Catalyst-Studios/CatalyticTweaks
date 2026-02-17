@@ -5,6 +5,7 @@ import java.util.List;
 import org.checkerframework.checker.units.qual.C;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 
 import com.catalytictweaks.catalytictweaksmod.mmr.IComponentManager;
@@ -17,6 +18,7 @@ import es.degrassi.mmreborn.common.machine.IOType;
 import es.degrassi.mmreborn.common.machine.MachineComponent;
 import es.degrassi.mmreborn.common.manager.ComponentManager;
 
+@Pseudo
 @SuppressWarnings("hiding")
 @Mixin(RecipeRequirement.class)
 public abstract class RecipeRequirementMixin<C extends MachineComponent<T>, R extends IRequirement<C, T>, T> implements IRecipeRequirement<C, T>

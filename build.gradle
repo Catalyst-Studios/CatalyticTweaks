@@ -117,22 +117,36 @@ configurations
 
 dependencies
 {
-    compileOnly localRuntime("curse.maven:pipez-443900:5609056")
-    compileOnly localRuntime("curse.maven:modular-machinery-reborn-1083840:7554420")
-    compileOnly localRuntime("curse.maven:kubejs-238086:7278501")
-    compileOnly localRuntime("curse.maven:emi-580555:6420931")
-    compileOnly localRuntime("curse.maven:athena-841890:7097200")
-    compileOnly localRuntime("curse.maven:rhino-416294:7104526")
-    compileOnly localRuntime("curse.maven:experiencelib-1156551:6616717")
-    compileOnly localRuntime("curse.maven:mekanism-268560:7132168")
-    compileOnly localRuntime("curse.maven:spark-361579:6225208")
-    compileOnly localRuntime("curse.maven:jade-324717:7428884")
-    compileOnly localRuntime("curse.maven:modular-machinery-reborn-mekanism-1131856:6394999")
-    compileOnly localRuntime("curse.maven:create-328085:7408951")
-    compileOnly localRuntime("curse.maven:jei-238222:7428957")
-    compileOnly localRuntime("curse.maven:kubejs-238086:7278501")
-    
+    //Needed for compile only
+
+    //MMR
+    compileOnly("curse.maven:modular-machinery-reborn-1083840:7554420")
+    compileOnly("curse.maven:modular-machinery-reborn-mekanism-1131856:6394999")
     //compileOnly localRuntime("curse.maven:modular-machinery-reborn-ars-nouveau-1132269:6405708")
+    compileOnly("curse.maven:experiencelib-1156551:6616717")
+    compileOnly("curse.maven:athena-841890:7097200")
+
+    //KJS
+    compileOnly("curse.maven:kubejs-238086:7278501")
+    compileOnly("curse.maven:rhino-416294:7104526")
+
+    //Recipe viewers
+    compileOnly("curse.maven:emi-580555:6420931")
+    compileOnly("curse.maven:jei-238222:7428957")
+
+    //Pipez
+    compileOnly("curse.maven:pipez-443900:5609056")
+
+    //Mekanism (needed for mmr)
+    compileOnly("curse.maven:mekanism-268560:7132168") //Tanks
+
+    //Create rendering
+    compileOnly("curse.maven:create-328085:7408951") //Rendering 
+
+    //For devving
+    // compileOnly localRuntime("curse.maven:spark-361579:6225208") //Profilers
+    // compileOnly localRuntime("curse.maven:jade-324717:7428884") //Status of machines
+
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources)

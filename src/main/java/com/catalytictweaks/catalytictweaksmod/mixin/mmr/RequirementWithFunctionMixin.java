@@ -15,6 +15,7 @@ import es.degrassi.mmreborn.common.manager.crafting.RequirementList;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.Collections;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+@Pseudo
 @Mixin(value = RequirementList.RequirementWithFunction.class)
 public abstract class RequirementWithFunctionMixin<R extends IRequirement<C, T>, C extends MachineComponent<T>, T>
 {

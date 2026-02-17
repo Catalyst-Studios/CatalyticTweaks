@@ -3,6 +3,7 @@ package com.catalytictweaks.catalytictweaksmod.mixin.mmr;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
@@ -13,6 +14,7 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 import net.neoforged.neoforge.fluids.crafting.FluidIngredient;
 
+@Pseudo
 @Mixin(FluidComponent.class)
 public abstract class FluidComponentMixin
 {

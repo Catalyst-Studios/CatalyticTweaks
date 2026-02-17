@@ -1,6 +1,7 @@
 package com.catalytictweaks.catalytictweaksmod.mixin.mmr.accessors;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
@@ -10,6 +11,7 @@ import es.degrassi.mmreborn.common.manager.crafting.MachineRecipeFinder;
 import es.degrassi.mmreborn.common.manager.crafting.Phase;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
+@Pseudo
 @Mixin(MachineProcessorCore.class)
 public interface MachineProcessorCoreAccessor
 {

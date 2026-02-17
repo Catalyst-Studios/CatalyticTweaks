@@ -5,10 +5,12 @@ import es.degrassi.mmreborn.common.machine.MachineComponent;
 import es.degrassi.mmreborn.common.util.IEnergyHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 
 import com.catalytictweaks.catalytictweaksmod.mmr.CompositeEnergyHandler;
 
+@Pseudo
 @Mixin(EnergyComponent.class)
 public abstract class EnergyComponentMixin extends MachineComponent<IEnergyHandler>
 {

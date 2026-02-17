@@ -22,10 +22,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.List;
 
+@Pseudo
 @Mixin(value = StructureRenderer.class)
 public abstract class StructureRendererMixin
 {

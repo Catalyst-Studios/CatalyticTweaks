@@ -5,6 +5,7 @@ import java.util.List;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 
 import es.degrassi.mmreborn.api.crafting.CraftingContext;
@@ -21,6 +22,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
+@Pseudo
 @Mixin(MachineProcessorCore.class)
 public abstract class MachineProcessorCoreMixin
 {

@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 
 import com.catalytictweaks.catalytictweaksmod.mixin.mmr.accessors.MachineProcessorCoreAccessor;
@@ -21,6 +22,7 @@ import es.degrassi.mmreborn.common.manager.crafting.MachineStatus;
 import es.degrassi.mmreborn.common.manager.crafting.Phase;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
+@Pseudo
 @Mixin(MachineProcessor.class)
 public abstract class MachineProcessorMixin
 {
