@@ -4,99 +4,153 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.139'
 }
 
-tasks.named('wrapper', Wrapper).configure {
+tasks.named('wrapper', Wrapper).configure
+{
     distributionType = Wrapper.DistributionType.BIN
 }
 
 version = mod_version
 group = mod_group_id
 
-repositories {
+repositories
+{
     mavenLocal()
     mavenCentral()  // Add Maven Central for common dependencies
-    maven { url = uri("https://maven.fabricmc.net") }  // Fabric repository
-    maven { url = uri("https://repo.maven.apache.org/maven2") }  // Apache Maven Central
-    maven { url = "https://api.modrinth.com/maven"}  // Modrinth Maven Central
-    exclusiveContent {
-        forRepository {
-            maven {
-                url "https://cursemaven.com"  // Curseforge Maven Central
+    maven
+    {
+        url = uri("https://maven.fabricmc.net")
+    }
+    maven
+    {
+        url = uri("https://repo.maven.apache.org/maven2")
+    }
+    maven
+    {
+        url = "https://api.modrinth.com/maven"
+    }
+    exclusiveContent
+    {
+        forRepository
+        {
+            maven
+            {
+                url "https://cursemaven.com"
             }
         }
-        filter {
+        filter
+        {
             includeGroup "curse.maven"
         }
     }
 }
 
-base {
+base
+{
     archivesName = mod_id
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-neoForge {
+neoForge
+{
     version = project.neo_version
-    parchment {
+    parchment
+    {
         mappingsVersion = project.parchment_mappings_version
         minecraftVersion = project.parchment_minecraft_version
     }
 
-    runs {
-        client {
+    accessTransformers.from project.files('src/main/resources/META-INF/accesstransformer.cfg')
+
+    runs
+    {
+        client
+        {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
-        server {
+        server
+        {
             server()
             programArgument '--nogui'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
-        gameTestServer {
+        gameTestServer
+        {
             type = "gameTestServer"
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
-        data {
+        data
+        {
             data()
             programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
         }
 
-        configureEach {
+        configureEach
+        {
             systemProperty 'forge.logging.markers', 'REGISTRIES'
             logLevel = org.slf4j.event.Level.WARN
         }
     }
 
-    mods {
-        "${mod_id}" {
+    mods
+    {
+        "${mod_id}"
+        {
             sourceSet(sourceSets.main)
         }
     }
 }
 
-sourceSets.main.resources { srcDir 'src/generated/resources' }
+sourceSets.main.resources
+{ 
+    srcDir 'src/generated/resources'
+}
 
-configurations {
+configurations
+{
     runtimeClasspath.extendsFrom localRuntime
 }
 
-dependencies {
-    compileOnly("maven.modrinth:pipez:z20ZR1YE")
-    implementation "curse.maven:modular-machinery-reborn-1083840:7369667"
-    implementation "curse.maven:kubejs-238086:7278501"
-    implementation "curse.maven:emi-580555:6420931"
-    implementation "curse.maven:athena-841890:7097200"
-    implementation "curse.maven:rhino-416294:7104526"
-    implementation "curse.maven:experiencelib-1156551:6616717"
-    implementation "curse.maven:mekanism-268560:7132168"
-    implementation "curse.maven:spark-361579:6225208"
-    implementation "curse.maven:jade-324717:7428884"
+dependencies
+{
+    //Needed for compile only
+
+    //MMR
+    compileOnly("curse.maven:modular-machinery-reborn-1083840:7554420")
+    compileOnly("curse.maven:modular-machinery-reborn-mekanism-1131856:6394999")
+    //compileOnly localRuntime("curse.maven:modular-machinery-reborn-ars-nouveau-1132269:6405708")
+    compileOnly("curse.maven:experiencelib-1156551:6616717")
+    compileOnly("curse.maven:athena-841890:7097200")
+
+    //KJS
+    compileOnly("curse.maven:kubejs-238086:7278501")
+    compileOnly("curse.maven:rhino-416294:7104526")
+
+    //Recipe viewers
+    compileOnly("curse.maven:emi-580555:6420931")
+    compileOnly("curse.maven:jei-238222:7428957")
+
+    //Pipez
+    compileOnly("curse.maven:pipez-443900:5609056")
+
+    //Mekanism (needed for mmr)
+    compileOnly("curse.maven:mekanism-268560:7132168") //Tanks
+
+    //Create rendering
+    compileOnly("curse.maven:create-328085:7408951") //Rendering 
+
+    //For devving
+    // compileOnly localRuntime("curse.maven:spark-361579:6225208") //Profilers
+    // compileOnly localRuntime("curse.maven:jade-324717:7428884") //Status of machines
+
 }
 
-var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources)
+{
     var replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
@@ -119,19 +173,25 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
 sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
 
-publishing {
-    publications {
-        register('mavenJava', MavenPublication) {
+publishing
+{
+    publications
+    {
+        register('mavenJava', MavenPublication)
+        {
             from components.java
         }
     }
-    repositories {
-        maven {
+    repositories
+    {
+        maven
+        {
             url "file://${project.projectDir}/repo"
         }
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
+tasks.withType(JavaCompile).configureEach
+{
     options.encoding = 'UTF-8'
 }
