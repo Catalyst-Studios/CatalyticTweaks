@@ -89,7 +89,7 @@ side="BOTH"
 [[dependencies.catalytictweaks]]
 modId="Pipez" # the modid of the Pipez mod
 type="optional" # Pipez is a required dependency
-versionRange="[1.16.5-0.5.0]" # version range for Pipez mod
+versionRange="[1.16.5-0.5.0,)" # version range for Pipez mod
 ordering="NONE" # No specific ordering for the dependency
 side="BOTH" # Applies to both client and server side
 
@@ -97,7 +97,7 @@ side="BOTH" # Applies to both client and server side
 [[dependencies.catalytictweaks]]
 modId="modular_machinery_reborn"
 type="optional"
-versionRange="[3.0.5]" # version range for Pipez mod
+versionRange="[3.0.5,)" # version range for Pipez mod
 ordering="NONE" # No specific ordering for the dependency
 side="BOTH" # Applies to both client and server side
 
