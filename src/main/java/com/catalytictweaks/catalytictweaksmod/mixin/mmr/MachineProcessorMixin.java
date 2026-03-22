@@ -103,12 +103,11 @@ public abstract class MachineProcessorMixin
     public void setMachineInventoryChanged()
     {
 
-        if(this.tile.getStatus().isCrafting())
+        if(!this.tile.getStatus().isCrafting())
         {
-            return;
+            this.tile.setStatus(MachineStatus.IDLE);
         }
 
-        this.tile.setStatus(MachineStatus.IDLE);
         for(var core: this.cores)
         {
             core.setComponentChanged();

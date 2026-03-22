@@ -90,8 +90,11 @@ public class MachineRecipeFinderMixin implements IMachineRecipeFinder
         {
             this.recipeCheckCooldown = this.baseCooldown;
             
-            this.okToCheck.clear();
-            this.okToCheck.addAll(this.recipes);
+            if(this.componentChanged || immediately)
+            {
+                this.okToCheck.clear();
+                this.okToCheck.addAll(this.recipes);
+            }
 
             InputSnapshot snapshot = new InputSnapshot((IComponentManager) this.tile.getComponentManager());
 
@@ -103,8 +106,8 @@ public class MachineRecipeFinderMixin implements IMachineRecipeFinder
             {
                 RecipeChecker<MachineRecipe> checker = iterator.next();
                 //System.out.println(checker.getRecipe().id());
-                //if(!this.componentChanged && checker.isInventoryRequirementsOnly() && !immediately)
-                //    continue;
+                if(!this.componentChanged && checker.isInventoryRequirementsOnly() && !immediately)
+                   continue;
 
                 MachineRecipe recipe = checker.getRecipe().value();
                 boolean logicCheck = true;
