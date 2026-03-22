@@ -23,7 +23,8 @@
     "jei.Runtime",
     "jei.Entry",
     "emi.Runtime",
-    "pipez.PipezMixin"
+    "pipez.PipezMixin",
+    "sfml.ProgramEditorColorsMixin"
   ],
   "client": [],
   "server": [],

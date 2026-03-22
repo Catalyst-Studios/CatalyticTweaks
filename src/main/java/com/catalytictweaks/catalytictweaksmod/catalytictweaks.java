@@ -15,7 +15,9 @@ public class catalytictweaks
 
     public catalytictweaks(IEventBus modEventBus, ModContainer modContainer)
     {
-        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        modContainer.registerConfig(ModConfig.Type.COMMON, Config.PIPEZ_SPEC, "CatTweaks/pipez.toml");
+        modContainer.registerConfig(ModConfig.Type.COMMON, Config.MMR_SPEC, "CatTweaks/mmr.toml");
+        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SFM_SPEC, "CatTweaks/sfm.toml");
     }
 
 }
