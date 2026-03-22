@@ -143,6 +143,9 @@ dependencies
     //Create rendering
     compileOnly("curse.maven:create-328085:7408951") //Rendering 
 
+    //SFML (why, i shouldnt be touching this, it feels bad)
+    compileOnly("curse.maven:super-factory-manager-306935:7736527") 
+
     //For devving
     // compileOnly localRuntime("curse.maven:spark-361579:6225208") //Profilers
     // compileOnly localRuntime("curse.maven:jade-324717:7428884") //Status of machines
