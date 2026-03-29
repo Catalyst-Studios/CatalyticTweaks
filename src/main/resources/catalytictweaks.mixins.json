@@ -19,6 +19,7 @@
     "mmr.MachineProcessorMixin",
     "mmr.StructureRendererMixin",
     "mmr.ControllerContainerMixin",
+    "mmr.jei.RecipeCategoryMixin",
     "create.MixinBigOutlines",
     "jei.Runtime",
     "jei.Entry",
