@@ -1,6 +1,5 @@
 package com.catalytictweaks.catalytictweaksmod.mmr;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import es.degrassi.mmreborn.api.capability.EntityHandler;
@@ -27,17 +26,16 @@ import es.degrassi.mmreborn.mekanism.common.machine.component.ChemicalComponent;
 import mekanism.api.chemical.Chemical;
 import mekanism.api.chemical.ChemicalStack;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 
 
 @Mixin
@@ -68,7 +66,7 @@ public class InputSnapshot
         }
     }
 
-    private final Map<Item, Integer> itemMap = Maps.newHashMap();
+    private final List<ItemStack> itemStacks = new ArrayList<>();
     private final List<InnerInputSnapshot> fluidList = new ArrayList<>(); 
     private long energyStored = 0;
     //private long sourceStored = 0;
@@ -84,6 +82,7 @@ public class InputSnapshot
         aggregateInputs(manager);
     }
 
+    @SuppressWarnings("unchecked")
     private void aggregateInputs(IComponentManager manager)
     {
         try
@@ -95,7 +94,7 @@ public class InputSnapshot
                         ItemStack stack = slot.getItemStack();
                         if(!stack.isEmpty())
                         {
-                            itemMap.merge(stack.getItem(), stack.getCount(), Integer::sum);
+                            addStackToSnapshot(stack);
                         }
                     });
                 }
@@ -177,6 +176,20 @@ public class InputSnapshot
         }
     }
 
+    @Unique
+    private void addStackToSnapshot(ItemStack newStack)
+    {
+        for(ItemStack existing : itemStacks)
+        {
+            if(ItemStack.isSameItemSameComponents(existing, newStack))
+            {
+                existing.setCount(existing.getCount() + newStack.getCount());
+                return;
+            }
+        }
+        itemStacks.add(newStack.copy());
+    }
+
     private void addChemicalToSnapshot(Chemical fluid, long amount)
     {
         for(InnerInputGasSnapshot entry : gasList)
@@ -212,14 +225,16 @@ public class InputSnapshot
             if(requiredCount == 0) return Integer.MAX_VALUE;
 
             long totalAvailable = 0;
-            Set<Item> checkedItems = Sets.newHashSet();
             
-            for(ItemStack validStack : sized.getItems())
+            for(ItemStack inventoryStack : itemStacks)
             {
-                Item item = validStack.getItem();
-                if(checkedItems.add(item))
+                for(ItemStack recipeStack : sized.ingredient().getItems())
                 {
-                    totalAvailable += itemMap.getOrDefault(item, 0);
+                    if(ItemStack.isSameItemSameComponents(recipeStack, inventoryStack))
+                    {
+                        totalAvailable += inventoryStack.getCount();
+                        break;
+                    }
                 }
             }
             return (int) (totalAvailable / requiredCount);
@@ -327,17 +342,19 @@ public class InputSnapshot
         {
             var ingredient = itemReq.getIngredient();
             int requiredCount = ingredient.count();
-            if (requiredCount == 0) return true;
+            if(requiredCount == 0) return true;
 
             long totalAvailable = 0;
-            Set<Item> checkedItems = Sets.newHashSet();
 
-            for(ItemStack validStack : ingredient.getItems())
+            for(ItemStack inventoryStack : itemStacks)
             {
-                Item item = validStack.getItem();
-                if(checkedItems.add(item))
+                for(ItemStack recipeStack : ingredient.ingredient().getItems())
                 {
-                    totalAvailable += itemMap.getOrDefault(item, 0);
+                    if(ItemStack.isSameItemSameComponents(recipeStack, inventoryStack))
+                    {
+                        totalAvailable += inventoryStack.getCount();
+                        break;
+                    }
                 }
             }
             
@@ -351,7 +368,7 @@ public class InputSnapshot
                 Fluid fluid = validStack.getFluid();
                 for(var entry : fluidList)
                 {
-                    if(entry.liquid.equals(fluid) && entry.size > 0)
+                    if(entry.liquid.equals(fluid) && entry.size >= ingredient.amount())
                     {
                         return true;
                     }
@@ -365,7 +382,7 @@ public class InputSnapshot
 
             for(var entry : gasList)
             {
-                if(entry.liquid == targetChemical && entry.size > 0)
+                if(entry.liquid == targetChemical && entry.size >= chemReq.amount)
                 {
                     return true;
                 }

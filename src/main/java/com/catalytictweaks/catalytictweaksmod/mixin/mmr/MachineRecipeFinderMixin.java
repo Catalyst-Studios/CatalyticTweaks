@@ -1,8 +1,10 @@
 package com.catalytictweaks.catalytictweaksmod.mixin.mmr;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.spongepowered.asm.mixin.Final;
@@ -10,6 +12,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 
 import com.catalytictweaks.catalytictweaksmod.mixin.mmr.accessors.RecipeCheckerAccessor;
 import com.catalytictweaks.catalytictweaksmod.mmr.IComponentManager;
@@ -29,11 +32,13 @@ import es.degrassi.mmreborn.common.manager.crafting.MachineRecipeFinder;
 import es.degrassi.mmreborn.common.manager.crafting.RecipeChecker;
 import es.degrassi.mmreborn.common.registration.RecipeRegistration;
 import es.degrassi.mmreborn.common.util.Comparators;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
 
 @Pseudo
 @Mixin(MachineRecipeFinder.class)
-public class MachineRecipeFinderMixin implements IMachineRecipeFinder
+public abstract class MachineRecipeFinderMixin implements IMachineRecipeFinder
 {
 
     @Shadow protected @Final MachineControllerEntity tile;
@@ -45,25 +50,35 @@ public class MachineRecipeFinderMixin implements IMachineRecipeFinder
     @Shadow protected int recipeCheckCooldown;
     @Shadow protected @Final MachineProcessorCore core;
 
+    @Unique
+    private static Map<ResourceLocation, List<RecipeHolder<MachineRecipe>>> recipe_cache = null;
+    @Unique
+    private static RecipeManager last_recipe_manager = null;
+
     @Overwrite
     @SuppressWarnings({ "null", "rawtypes" })
     public void init()
     {
-        var allRecipes = tile.getLevel().getRecipeManager()
-                         .getAllRecipesFor(RecipeRegistration.RECIPE_TYPE.get());
+        var manager = tile.getLevel().getRecipeManager();
+        
+        if(recipe_cache == null || last_recipe_manager != manager)
+        {
+            recipe_cache = new HashMap<>();
+            last_recipe_manager = manager;
+
+            var allRecipes = manager.getAllRecipesFor(RecipeRegistration.RECIPE_TYPE.get());
+            
+            for(RecipeHolder<MachineRecipe> recipe : allRecipes)
+            {
+                var machineId = recipe.value().getOwningMachineIdentifier();
+                recipe_cache.computeIfAbsent(machineId, k -> new ArrayList<>()).add(recipe);
+            }
+
+            recipe_cache.values().forEach(list -> list.sort(Comparators::compare));
+        }
 
         var targetId = tile.getId();
-
-        List<RecipeHolder<MachineRecipe>> filteredRecipes = new ArrayList<>(allRecipes.size());
-
-        for(RecipeHolder<MachineRecipe> recipe : allRecipes)
-        {
-            if(recipe.value().getOwningMachineIdentifier().equals(targetId))
-            {
-                filteredRecipes.add(recipe);
-            }
-        }
-        filteredRecipes.sort(Comparators::compare);
+        List<RecipeHolder<MachineRecipe>> filteredRecipes = recipe_cache.getOrDefault(targetId, List.of());
 
         List<RecipeChecker<MachineRecipe>> finalRecipes = new ArrayList<>(filteredRecipes.size());
         
