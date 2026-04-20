@@ -23,7 +23,7 @@ license="MIT"
 modId="catalytictweaks" #mandatory
 
 # The version number of the mod
-version="0.2" #mandatory
+version="1.0.3" #mandatory
 
 # A display name for the mod
 displayName="Catalytic Tweaks" #mandatory
@@ -35,16 +35,16 @@ displayName="Catalytic Tweaks" #mandatory
 displayURL="https://www.curseforge.com/minecraft/mc-mods/catalytic-tweaks" #optional
 
 # A file name (in the root of the mod JAR) containing a logo for display
-#logoFile="examplemod.png" #optional
+logoFile="image.png" #optional
 
 # A text field displayed in the mod UI
-credits="To MMR author and Pipez author for having their code visible" #optional
+credits="To MMR author, Pipez author and SFM for having their code visible" #optional
 
 # A text field displayed in the mod UI
 authors="Apex Slayer, Titop54" #optional
 
 # The description text for the mod (multi line!) (#mandatory)
-description='''Mod to make changes to multiple mods. Currently to MMR and Pipez'''
+description='''Mod to make changes to multiple mods. Currently to MMR, Pipez and SFM'''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
 [[mixins]]
@@ -88,7 +88,7 @@ side="BOTH"
 # Pipez mod dependency
 [[dependencies.catalytictweaks]]
 modId="Pipez" # the modid of the Pipez mod
-type="optional" # Pipez is a required dependency
+type="optional"
 versionRange="[1.16.5-0.5.0,)" # version range for Pipez mod
 ordering="NONE" # No specific ordering for the dependency
 side="BOTH" # Applies to both client and server side
@@ -97,9 +97,16 @@ side="BOTH" # Applies to both client and server side
 [[dependencies.catalytictweaks]]
 modId="modular_machinery_reborn"
 type="optional"
-versionRange="[3.0.5,)" # version range for Pipez mod
+versionRange="[3.0.5,)" # version range for MMR mod
 ordering="NONE" # No specific ordering for the dependency
 side="BOTH" # Applies to both client and server side
+
+[[dependencies.catalytictweaks]]
+modId="sfm"
+type="optional"
+versionRange="[4.31.0,)" # version range for SFM mod
+ordering="NONE" # No specific ordering for the dependency
+side="BOTH"
 
 
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares

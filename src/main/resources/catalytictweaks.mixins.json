@@ -19,11 +19,13 @@
     "mmr.MachineProcessorMixin",
     "mmr.StructureRendererMixin",
     "mmr.ControllerContainerMixin",
+    "mmr.jei.RecipeCategoryMixin",
     "create.MixinBigOutlines",
     "jei.Runtime",
     "jei.Entry",
     "emi.Runtime",
-    "pipez.PipezMixin"
+    "pipez.PipezMixin",
+    "sfml.ProgramEditorColorsMixin"
   ],
   "client": [],
   "server": [],
