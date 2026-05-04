@@ -5,8 +5,11 @@ import java.util.List;
 import es.degrassi.mmreborn.api.crafting.ICraftingContext;
 import es.degrassi.mmreborn.common.machine.MachineComponent;
 import es.degrassi.mmreborn.common.manager.ComponentManager;
+import net.minecraft.util.RandomSource;
 
 public interface IRecipeRequirement<C extends MachineComponent<T>, T>
 {
     List<C> findComponents(ComponentManager manager, ICraftingContext context);
+
+    boolean shouldSkip(RandomSource rand, ICraftingContext context);
 }

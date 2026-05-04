@@ -135,7 +135,7 @@ dependencies
 
     //Recipe viewers
     compileOnly localRuntime("curse.maven:emi-580555:6420931")
-    compileOnly("curse.maven:jei-238222:7428957")
+    compileOnly("curse.maven:jei-238222:7420587")
 
     //Pipez
     compileOnly("curse.maven:pipez-443900:5609056")
