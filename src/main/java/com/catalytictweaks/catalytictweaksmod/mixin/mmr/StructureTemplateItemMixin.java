@@ -42,20 +42,45 @@ public abstract class StructureTemplateItemMixin
     private static final Gson ESCAPE_JSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
     @Accessor("PATTERN_CODEC")
-    private static NamedCodec<List<List<String>>> getPatternCodec() {
+    private static NamedCodec<List<List<String>>> getPatternCodec()
+    {
         throw new AssertionError();
     }
 
     @Accessor("KEYS_CODEC")
-    private static NamedCodec<Map<Character, BlockIngredient>> getKeysCodec() {
+    private static NamedCodec<Map<Character, BlockIngredient>> getKeysCodec()
+    {
         throw new AssertionError();
     }
 
     @Unique
-    private static final String ALLOWED_KEYS = "abcdefghijkl"
-                                               + "nopqrstuvwxyz" // no 'm'
-                                               + "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                               + "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+    private static final String ALLOWED_KEYS =
+        "abcdefghijkl"
+        +"nopqrstuvwxyz"
+        +"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        +"!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+        +"ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß"
+        +"àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ"
+        +"¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿"
+        +"ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ"
+        +"αβγδεζηθικλμνξοπρςστυφχψω"
+        +"АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+        +"абвгдежзийклмнопрстуфхцчшщъыьэюя"
+        +"ĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽžſ"
+        +"←↑→↓↔↕↨↔↕▲▼►◄◆◇○●□■☆★♠♣♥♦♪♫"
+        +"ﬁﬂĳǌ"
+        + "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわゐゑをん"
+        + "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヰヱヲン"
+        + "ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦㄧㄨㄩ"
+        + "ԱԲԳԴԵԶԷԸԹԺԻԼԽԾԿՀՁՂՃՄՅՆՇՈՉՊՋՌՍՎՏՐՑՒՓՔՕՖ"
+        + "աբգդեզէըթժիլխծկհձղճմյնշոչպջռսվտրցւփքօֆ"
+        + "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ"
+        + "אבגדהוזחטיךכלםמןנסעףפץצקרשת"
+        + "ابتثجحخدذرزسشصضطظعغفقكلمنهوي"
+        + "กขฃคฅฆงจฉชซฌญฎฏฐฑฒณดตถทธนบปผฝพฟภมยรฤลฦวศษสหฬอฮ"
+        + "ກຂຄງຈຊຍດຕຖທນບປຜຝພຟມຢຣລວສຫອຮ"
+        + "∀∁∂∃∄∅∆∋∌∍∎∏−∓∔∕∖∗∘∙√∛∜∞∟∠∡∢∣∤∥∦∧∨∩∪∫∬∭∮∯∰∱∲∳∴∵∶∷∸∹∺∻∼∽∾∿≀≁≂≃≄≅≆≇≈≉≊≋≌≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟≠≡≢≣≤≥≦≧≨≩≪≫≬≭≮≯≰≱≲≳≴≵≶≷≸≹≺≻≼≽≾≿"
+        + "⊀⊁⊂⊃⊄⊅⊆⊇⊈⊉⊊⊋⊌⊍⊎⊏⊐⊑⊒⊓⊔⊕⊖⊗⊘⊙⊚⊛⊜⊝⊞⊟⊠⊡⊢⊣⊤⊥⊦⊧⊨⊩⊪⊫⊬⊭⊮⊯⊰⊱⊲⊳⊴⊵⊶⊷⊸⊹⊺⊻⊼⊽⊾⊿";
 
     @Shadow
     protected abstract BlockIngredient[][][] getStructureArray(Set<BlockPos> blocks, Direction machineFacing, Level world);
@@ -150,11 +175,10 @@ public abstract class StructureTemplateItemMixin
     }
 
     @Unique
-    private String buildKubeJSOriginal(List<List<String>> pattern, Map<Character, BlockIngredient> keys) {
-        JsonElement patternJson = getPatternCodec().encodeStart(JsonOps.INSTANCE, pattern)
-                .result().orElseThrow(IllegalStateException::new);
-        JsonElement keysJson = getKeysCodec().encodeStart(JsonOps.INSTANCE, keys)
-                .result().orElseThrow(IllegalStateException::new);
+    private String buildKubeJSOriginal(List<List<String>> pattern, Map<Character, BlockIngredient> keys)
+    {
+        JsonElement patternJson = getPatternCodec().encodeStart(JsonOps.INSTANCE, pattern).result().orElseThrow(IllegalStateException::new);
+        JsonElement keysJson = getKeysCodec().encodeStart(JsonOps.INSTANCE, keys).result().orElseThrow(IllegalStateException::new);
 
         return ".structure(\nMMRStructureBuilder.create()\n.pattern(" + patternJson + ")\n.keys(" + keysJson + "))";
     }
