@@ -20,6 +20,7 @@
     "mmr.StructureRendererMixin",
     "mmr.ControllerContainerMixin",
     "mmr.jei.RecipeCategoryMixin",
+    "mmr.StructureTemplateItemMixin",
     "create.MixinBigOutlines",
     "jei.Runtime",
     "jei.Entry",
