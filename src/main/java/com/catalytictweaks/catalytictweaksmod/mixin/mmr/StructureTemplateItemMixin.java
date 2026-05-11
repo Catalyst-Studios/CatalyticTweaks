@@ -101,7 +101,7 @@ public abstract class StructureTemplateItemMixin
         {
             if(keyIndex.get() >= maxIndex)
             {
-                throw new IllegalStateException("Too many blocks....");
+                return;
             }
             char keyChar = ALLOWED_KEYS.charAt(keyIndex.getAndIncrement());
             keys.put(keyChar, state);
