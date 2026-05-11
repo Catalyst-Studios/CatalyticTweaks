@@ -37,7 +37,9 @@ public abstract class StructureTemplateItemMixin
 {
 
     @Unique
-    private static final Gson NO_ESCAPE_GSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
+    private static final Gson NO_ESCAPE_JSON = new GsonBuilder().disableHtmlEscaping().create();
+    @Unique
+    private static final Gson ESCAPE_JSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
     @Accessor("PATTERN_CODEC")
     private static NamedCodec<List<List<String>>> getPatternCodec() {
@@ -170,12 +172,12 @@ public abstract class StructureTemplateItemMixin
         for(int i = 0; i < pattern.size(); i++)
         {
             string += "        ";
-            string += NO_ESCAPE_GSON.toJson(pattern.get(i));
+            string += NO_ESCAPE_JSON.toJson(pattern.get(i));
             if(i < pattern.size() - 1) string += ",";
             string += "\n";
         }
         string += "    ])\n    .keys(";
-        string += NO_ESCAPE_GSON.toJson(keysMap);
+        string += ESCAPE_JSON.toJson(keysMap);
         string += ")\n)";
         return string;
     }
@@ -193,12 +195,12 @@ public abstract class StructureTemplateItemMixin
         for(int i = 0; i < pattern.size(); i++)
         {
             string += "        ";
-            string += NO_ESCAPE_GSON.toJson(pattern.get(i));
+            string += NO_ESCAPE_JSON.toJson(pattern.get(i));
             if(i < pattern.size() - 1) string += ",";
             string += "\n";
         }
         string += "    ])\n    .keys(";
-        string += NO_ESCAPE_GSON.toJson(keysMap);
+        string += ESCAPE_JSON.toJson(keysMap);
         string += ")\n)";
         return string;
     }
