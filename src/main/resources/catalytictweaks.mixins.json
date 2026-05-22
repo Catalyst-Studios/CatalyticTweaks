@@ -21,6 +21,7 @@
     "mmr.ControllerContainerMixin",
     "mmr.jei.RecipeCategoryMixin",
     "mmr.StructureTemplateItemMixin",
+    "mmr.FieldCodecMixin",
     "create.MixinBigOutlines",
     "jei.Runtime",
     "jei.Entry",
