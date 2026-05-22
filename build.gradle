@@ -122,9 +122,11 @@ dependencies
     //Needed for compile only
 
     //MMR
-    compileOnly localRuntime("curse.maven:modular-machinery-reborn-1083840:7772812")
+    compileOnly localRuntime("curse.maven:modular-machinery-reborn-1083840:8064444")
     compileOnly localRuntime("curse.maven:modular-machinery-reborn-mekanism-1131856:6394999")
     compileOnly localRuntime("curse.maven:experiencelib-1156551:7705470")
+    compileOnly localRuntime("curse.maven:ldlib-626676:8108634")
+    
     //compileOnly localRuntime("curse.maven:modular-machinery-reborn-ars-nouveau-1132269:6405708")
     compileOnly localRuntime("curse.maven:experiencelib-1156551:6616717")
     compileOnly localRuntime("curse.maven:athena-841890:7097200")
