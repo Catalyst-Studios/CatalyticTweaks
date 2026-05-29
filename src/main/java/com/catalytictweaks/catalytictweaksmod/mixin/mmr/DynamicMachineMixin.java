@@ -35,7 +35,14 @@ public class DynamicMachineMixin implements DynamicMachineBridge
             return Component.Serializer.toJson(this.customComponent, RegistryAccess.EMPTY);
         }
         
-        return this.localizedName.orElse("");
+        String val = this.localizedName.orElse("");
+        
+        if (val.startsWith("{") || val.startsWith("["))
+        {
+            return val;
+        }
+
+        return val.replace("\"", "");
     }
 
     @Override
