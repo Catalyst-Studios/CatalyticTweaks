@@ -38,6 +38,6 @@ public class Name
             return Component.translatable(nameVal.replace("\"", ""));
         }
 
-        return Component.literal(nameVal);
+        return Component.literal(nameVal.replace("\"", ""));
     }
 }
