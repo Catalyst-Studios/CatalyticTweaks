@@ -134,4 +134,18 @@ public class Name
 
         return root;
     }
+
+    public static String getLocalizedName(Component customComponent, ResourceLocation registryName, Optional<String> localizedName)
+    {
+        if(customComponent != null)
+        {
+            return Component.Serializer.toJson(customComponent, RegistryAccess.EMPTY);
+        }
+        
+        Component component = Name.getName(registryName, localizedName, customComponent);
+    
+        String plainText = component.getString();
+        
+        return plainText.replaceAll("<[^>]*>", "");
+    }
 }
