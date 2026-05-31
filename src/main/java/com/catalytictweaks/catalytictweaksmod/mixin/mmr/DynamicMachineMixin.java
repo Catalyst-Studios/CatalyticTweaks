@@ -1,7 +1,6 @@
 package com.catalytictweaks.catalytictweaksmod.mixin.mmr;
 
 import es.degrassi.mmreborn.common.machine.DynamicMachine;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
@@ -11,7 +10,6 @@ import org.spongepowered.asm.mixin.Unique;
 
 import com.catalytictweaks.catalytictweaksmod.mmr.DynamicMachineBridge;
 import com.catalytictweaks.catalytictweaksmod.mmr.Name;
-
 import java.util.Optional;
 
 @Mixin(value = DynamicMachine.class, remap = false)
@@ -30,19 +28,7 @@ public class DynamicMachineMixin implements DynamicMachineBridge
     @Overwrite
     public String getLocalizedName()
     {
-        if(this.customComponent != null)
-        {
-            return Component.Serializer.toJson(this.customComponent, RegistryAccess.EMPTY);
-        }
-        
-        String val = this.localizedName.orElse("");
-        
-        if (val.startsWith("{") || val.startsWith("["))
-        {
-            return val;
-        }
-
-        return val.replace("\"", "");
+        return Name.getLocalizedName(customComponent, registryName, localizedName);
     }
 
     @Override
