@@ -127,7 +127,7 @@ dependencies
     compileOnly localRuntime("curse.maven:experiencelib-1156551:7705470")
     compileOnly localRuntime("curse.maven:ldlib-626676:8108634")
     
-    //compileOnly localRuntime("curse.maven:modular-machinery-reborn-ars-nouveau-1132269:6405708")
+    compileOnly localRuntime("curse.maven:modular-machinery-reborn-ars-nouveau-1132269:7731301")
     compileOnly localRuntime("curse.maven:experiencelib-1156551:6616717")
     compileOnly localRuntime("curse.maven:athena-841890:7097200")
 
@@ -149,13 +149,22 @@ dependencies
     compileOnly("curse.maven:create-328085:7408951") //Rendering 
 
     //SFML (why, i shouldnt be touching this, it feels bad)
-    compileOnly("curse.maven:super-factory-manager-306935:7736527") 
+    compileOnly localRuntime("curse.maven:super-factory-manager-306935:7736527") 
 
     //For devving
-    // compileOnly localRuntime("curse.maven:spark-361579:6225208") //Profilers
-    compileOnly localRuntime("curse.maven:jade-324717:7428884") //Status of machines
+    localRuntime("curse.maven:spark-361579:6225208") //Profilers
+    localRuntime("curse.maven:jade-324717:7428884") //Status of machines
 
     localRuntime("curse.maven:text-animator-881778:7379653")
+
+    localRuntime("curse.maven:ctce-1296666:7850420")
+
+    localRuntime("curse.maven:ars-nouveau-401955:8152094")
+    localRuntime("curse.maven:curios-309927:6529130")
+    localRuntime("curse.maven:geckolib-388172:7707149")
+    localRuntime("curse.maven:occultism-361026:8037152")
+    localRuntime("curse.maven:modonomicon-538392:7771524")
+    localRuntime("curse.maven:smartbrainlib-661293:7055149") 
 
 }
 
