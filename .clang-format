@@ -1,0 +1,44 @@
+BasedOnStyle: LLVM
+Language: Java
+IndentWidth: 4
+ContinuationIndentWidth: 4
+UseTab: Never
+TabWidth: 4
+InsertBraces: true
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: false
+  SplitEmptyFunction: false
+
+AllowShortLambdasOnASingleLine: None
+AllowShortBlocksOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: Never
+SpaceInEmptyParentheses: false
+SpacesInAngles: false
+SpacesInContainerLiterals: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+AlignAfterOpenBracket: DontAlign
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignOperands: Align
+AlignTrailingComments: false
+ColumnLimit: 0
+BreakStringLiterals: false
+
+
+SortIncludes: false

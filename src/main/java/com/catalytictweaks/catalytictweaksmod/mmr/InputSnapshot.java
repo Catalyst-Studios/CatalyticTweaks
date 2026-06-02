@@ -1,9 +1,11 @@
 package com.catalytictweaks.catalytictweaksmod.mmr;
 
+import com.catalytictweaks.catalytictweaksmod.Config;
 import com.google.common.collect.Sets;
 
 import es.degrassi.mmreborn.api.capability.EntityHandler;
 import es.degrassi.mmreborn.api.crafting.requirement.IRequirement;
+// import es.degrassi.mmreborn.ars.common.crafting.requirement.RequirementSource;
 import es.degrassi.mmreborn.common.crafting.requirement.RequirementDimension;
 import es.degrassi.mmreborn.common.crafting.requirement.RequirementEnergy;
 import es.degrassi.mmreborn.common.crafting.requirement.RequirementEnergyPerTick;
@@ -37,7 +39,6 @@ import java.util.Set;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-
 @Mixin
 public class InputSnapshot
 {
@@ -67,7 +68,7 @@ public class InputSnapshot
     }
 
     private final List<ItemStack> itemStacks = new ArrayList<>();
-    private final List<InnerInputSnapshot> fluidList = new ArrayList<>(); 
+    private final List<InnerInputSnapshot> fluidList = new ArrayList<>();
     private long energyStored = 0;
     //private long sourceStored = 0;
     private long fuelStored = 0;
@@ -107,7 +108,7 @@ public class InputSnapshot
                     for(int i = 0; i < handler.getTanks(); i++)
                     {
                         FluidStack stack = handler.getFluidInTank(i);
-                        
+
                         if(!stack.isEmpty())
                         {
                             addFluidToSnapshot(stack.getFluid(), stack.getAmount());
@@ -129,7 +130,7 @@ public class InputSnapshot
                     this.fuelStored += fuelComp.getContainerProvider().getFuel();
                 }
             });
-            
+
             manager.getComponents(es.degrassi.mmreborn.mekanism.common.registration.ComponentRegistration.COMPONENT_CHEMICAL.get(), IOType.INPUT).forEach(comp -> {
                 if(comp instanceof ChemicalComponent fluidComp)
                 {
@@ -137,7 +138,7 @@ public class InputSnapshot
                     for(int i = 0; i < handler.getChemicalTanks(); i++)
                     {
                         ChemicalStack stack = handler.getChemicalInTank(i);
-                            
+
                         if(!stack.isEmpty())
                         {
                             addChemicalToSnapshot(stack.getChemical(), stack.getAmount());
@@ -219,32 +220,46 @@ public class InputSnapshot
     public int calculateMatches(IRequirement<?, ?> requirement)
     {
         if(requirement instanceof RequirementItem itemReq)
-            {
-            var sized = itemReq.getIngredient(); 
+        {
+            var sized = itemReq.getIngredient();
             int requiredCount = sized.count();
-            if(requiredCount == 0) return Integer.MAX_VALUE;
+            if(requiredCount == 0)
+                return Integer.MAX_VALUE;
 
             long totalAvailable = 0;
-            
+
             for(ItemStack inventoryStack : itemStacks)
             {
                 for(ItemStack recipeStack : sized.ingredient().getItems())
                 {
-                    if(ItemStack.isSameItemSameComponents(recipeStack, inventoryStack))
+
+                    if(Config.LOOSE_MATCH_SET.contains(recipeStack.getItem()))
                     {
-                        totalAvailable += inventoryStack.getCount();
-                        break;
+                        if(ItemStack.isSameItem(recipeStack, inventoryStack))
+                        {
+                            totalAvailable += inventoryStack.getCount();
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        if(ItemStack.isSameItemSameComponents(recipeStack, inventoryStack))
+                        {
+                            totalAvailable += inventoryStack.getCount();
+                            break;
+                        }
                     }
                 }
             }
-            return (int) (totalAvailable / requiredCount);
-        } 
+            return (int)(totalAvailable / requiredCount);
+        }
         else if(requirement instanceof RequirementFluid fluidReq)
         {
             var sized = fluidReq.getIngredient();
             int requiredAmount = sized.amount();
-            
-            if(requiredAmount == 0) return Integer.MAX_VALUE;
+
+            if(requiredAmount == 0)
+                return Integer.MAX_VALUE;
 
             long totalAvailable = 0;
             Set<Fluid> checkedFluids = Sets.newHashSet();
@@ -263,15 +278,16 @@ public class InputSnapshot
                     }
                 }
             }
-            
-            return (int) (totalAvailable / requiredAmount);
+
+            return (int)(totalAvailable / requiredAmount);
         }
-        else if((Object) requirement instanceof RequirementChemical chemReq)
+        else if((Object)requirement instanceof RequirementChemical chemReq)
         {
             var requiredStack = chemReq.required;
             long requiredAmount = chemReq.amount;
 
-            if(requiredAmount == 0) return Integer.MAX_VALUE;
+            if(requiredAmount == 0)
+                return Integer.MAX_VALUE;
 
             long totalAvailable = 0;
             Chemical targetChemical = requiredStack.getChemical();
@@ -284,42 +300,49 @@ public class InputSnapshot
                 }
             }
 
-            return (int) (totalAvailable / requiredAmount);
+            return (int)(totalAvailable / requiredAmount);
         }
-        else if((Object) requirement instanceof RequirementFuel fuelReq)
+        else if((Object)requirement instanceof RequirementFuel fuelReq)
         {
             long requiredAmount = fuelReq.required;
-            if(requiredAmount == 0) return Integer.MAX_VALUE;
-            
-            return (int) (this.fuelStored / requiredAmount);
+            if(requiredAmount == 0)
+                return Integer.MAX_VALUE;
+
+            return (int)(this.fuelStored / requiredAmount);
         }
-        else if((Object) requirement instanceof RequirementEnergy energyReq)
+        else if((Object)requirement instanceof RequirementEnergy energyReq)
         {
-            if(energyReq.getMode() == IOType.OUTPUT) return Integer.MAX_VALUE;
+            if(energyReq.getMode() == IOType.OUTPUT)
+                return Integer.MAX_VALUE;
             long requiredVal = energyReq.requirement;
-            if(requiredVal == 0) return Integer.MAX_VALUE;
-            return (int) (this.energyStored / requiredVal);
+            if(requiredVal == 0)
+                return Integer.MAX_VALUE;
+            return (int)(this.energyStored / requiredVal);
         }
         else if(requirement instanceof RequirementEnergyPerTick energyReq)
         {
             long requiredEnergy = energyReq.requirementPerTick;
-            if(requiredEnergy == 0) return Integer.MAX_VALUE;
-            return (int) (energyStored / requiredEnergy); 
+            if(requiredEnergy == 0)
+                return Integer.MAX_VALUE;
+            return (int)(energyStored / requiredEnergy);
         }
         else if(requirement instanceof RequirementRedstone redReq)
         {
-            if(redReq.getMode() == IOType.OUTPUT) return Integer.MAX_VALUE;
+            if(redReq.getMode() == IOType.OUTPUT)
+                return Integer.MAX_VALUE;
             return (this.redstoneStored == redReq.getAmount()) ? Integer.MAX_VALUE : 0;
         }
         else if(requirement instanceof RequirementDimension dimReq)
         {
-            if(this.currentDimension == null) return 0;
+            if(this.currentDimension == null)
+                return 0;
             boolean match = dimReq.filter().contains(this.currentDimension) != dimReq.blacklist();
             return match ? Integer.MAX_VALUE : 0;
         }
         else if(requirement instanceof RequirementEntity entityReq)
         {
-            if(entityReq.getMode() == IOType.OUTPUT) return Integer.MAX_VALUE;
+            if(entityReq.getMode() == IOType.OUTPUT)
+                return Integer.MAX_VALUE;
             if(!this.entityHandlers.isEmpty())
             {
                 return Integer.MAX_VALUE;
@@ -337,12 +360,14 @@ public class InputSnapshot
 
     public boolean contains(IRequirement<?, ?> requirement)
     {
-        if(requirement.getMode() == IOType.OUTPUT) return true;
+        if(requirement.getMode() == IOType.OUTPUT)
+            return true;
         if(requirement instanceof RequirementItem itemReq)
         {
             var ingredient = itemReq.getIngredient();
             int requiredCount = ingredient.count();
-            if(requiredCount == 0) return true;
+            if(requiredCount == 0)
+                return true;
 
             long totalAvailable = 0;
 
@@ -350,14 +375,25 @@ public class InputSnapshot
             {
                 for(ItemStack recipeStack : ingredient.ingredient().getItems())
                 {
-                    if(ItemStack.isSameItemSameComponents(recipeStack, inventoryStack))
+                    if (Config.LOOSE_MATCH_SET.contains(recipeStack.getItem()))
                     {
-                        totalAvailable += inventoryStack.getCount();
-                        break;
+                        if(ItemStack.isSameItem(recipeStack, inventoryStack))
+                        {
+                            totalAvailable += inventoryStack.getCount();
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        if(ItemStack.isSameItemSameComponents(recipeStack, inventoryStack))
+                        {
+                            totalAvailable += inventoryStack.getCount();
+                            break;
+                        }
                     }
                 }
             }
-            
+
             return totalAvailable >= requiredCount;
         }
         else if(requirement instanceof RequirementFluid fluidReq)
@@ -376,7 +412,7 @@ public class InputSnapshot
             }
             return false;
         }
-        else if((Object) requirement instanceof RequirementChemical chemReq)
+        else if((Object)requirement instanceof RequirementChemical chemReq)
         {
             Chemical targetChemical = chemReq.required.getChemical();
 
@@ -389,17 +425,17 @@ public class InputSnapshot
             }
             return false;
         }
-        else if((Object) requirement instanceof RequirementFuel fuelReq)
+        else if((Object)requirement instanceof RequirementFuel fuelReq)
         {
             return this.fuelStored >= fuelReq.required;
         }
-        else if((Object) requirement instanceof RequirementEnergy)
+        else if((Object)requirement instanceof RequirementEnergy e)
         {
-            return this.energyStored > 0;
+            return this.energyStored > e.requirement;
         }
-        else if(requirement instanceof RequirementEnergyPerTick)
+        else if(requirement instanceof RequirementEnergyPerTick e)
         {
-            return this.energyStored > 0;
+            return this.energyStored > e.requirementPerTick;
         }
         else if(requirement instanceof RequirementRedstone redReq)
         {
@@ -413,8 +449,9 @@ public class InputSnapshot
         {
             return !this.entityHandlers.isEmpty();
         }
-        // else if ((Object)requirement instanceof RequirementSource) {
-        //     return this.sourceStored > 0;
+        // else if((Object)requirement instanceof RequirementSource s)
+        // {
+        //     return this.sourceStored > s.required;
         // }
 
         return true;
