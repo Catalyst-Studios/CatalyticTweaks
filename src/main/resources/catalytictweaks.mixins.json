@@ -29,7 +29,8 @@
     "jei.Entry",
     "emi.Runtime",
     "pipez.PipezMixin",
-    "sfml.ProgramEditorColorsMixin"
+    "sfml.ProgramEditorColorsMixin",
+    "kjs.MixinKubeJSCommands"
   ],
   "client": [],
   "server": [],

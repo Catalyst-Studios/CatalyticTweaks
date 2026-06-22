@@ -23,7 +23,7 @@ license="MIT"
 modId="catalytictweaks" #mandatory
 
 # The version number of the mod
-version="1.0.10" #mandatory
+version="1.0.11" #mandatory
 
 # A display name for the mod
 displayName="Catalytic Tweaks" #mandatory
@@ -105,6 +105,13 @@ side="BOTH" # Applies to both client and server side
 modId="sfm"
 type="optional"
 versionRange="[4.31.0,)" # version range for SFM mod
+ordering="NONE" # No specific ordering for the dependency
+side="BOTH"
+
+[[dependencies.catalytictweaks]]
+modId="kubejs"
+type="optional"
+versionRange="[2101.7.2-build.368,)" # version range for SFM mod
 ordering="NONE" # No specific ordering for the dependency
 side="BOTH"
 
