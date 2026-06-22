@@ -22,6 +22,7 @@ public class Config
     private static final ModConfigSpec.Builder PIPEZ_BUILDER = new ModConfigSpec.Builder();
     private static final ModConfigSpec.Builder MMR_BUILDER = new ModConfigSpec.Builder();
     private static final ModConfigSpec.Builder SFM_BUILDER = new ModConfigSpec.Builder();
+    private static final ModConfigSpec.Builder KJS_BUILDER = new ModConfigSpec.Builder();
 
     // Pipez
     //  BASIC
@@ -186,9 +187,12 @@ public class Config
         registerToken(81, "WS", white);
     }
 
+    private static final ModConfigSpec.BooleanValue with_commas = KJS_BUILDER.comment("Should the copy text message has ' or not").define("KJS.with_commas", true);
+
     public static final ModConfigSpec PIPEZ_SPEC = PIPEZ_BUILDER.build();
     public static final ModConfigSpec MMR_SPEC = MMR_BUILDER.build();
     public static final ModConfigSpec SFM_SPEC = SFM_BUILDER.build();
+    public static final ModConfigSpec KJS_SPEC = KJS_BUILDER.build();
 
     public static boolean basicCanChangeRedstoneMode, basicCanChangeFilter, basicCanChangeDistribution;
     public static boolean improvedCanChangeRedstoneMode, improvedCanChangeFilter, improvedCanChangeDistribution;
@@ -198,6 +202,8 @@ public class Config
 
     // MMR
     public static boolean shouldmmrdoonerecipe;
+
+    public static boolean COMMAS;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -252,6 +258,10 @@ public class Config
 
                 Color.setColor(tokenId, hexFromConfig);
             }
+        }
+        else if(eventSpec == KJS_SPEC)
+        {
+            COMMAS = with_commas.get();
         }
     }
 }
