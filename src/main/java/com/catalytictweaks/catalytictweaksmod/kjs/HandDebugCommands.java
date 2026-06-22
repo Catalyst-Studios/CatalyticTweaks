@@ -483,7 +483,7 @@ public class HandDebugCommands
 
         String jsonString = gson.toJson(componentsJson);
 
-        player.sendSystemMessage(Component.literal("Components (for .withNBT):"));
+        player.sendSystemMessage(Component.literal("Components (for .withNBT or Item.of):"));
         player.sendSystemMessage(copy(jsonString, ChatFormatting.WHITE, "Components JSON"));
         return Command.SINGLE_SUCCESS;
     }
