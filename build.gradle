@@ -217,3 +217,7 @@ tasks.withType(JavaCompile).configureEach
 {
     options.encoding = 'UTF-8'
 }
+
+tasks.named('runClient', JavaExec) {
+    jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005'
+}

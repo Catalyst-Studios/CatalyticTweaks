@@ -111,7 +111,7 @@ side="BOTH"
 [[dependencies.catalytictweaks]]
 modId="kubejs"
 type="optional"
-versionRange="[2101.7.2-build.368,)" # version range for SFM mod
+versionRange="[2101.7.2-build.348,)" # version range for SFM mod
 ordering="NONE" # No specific ordering for the dependency
 side="BOTH"
 
