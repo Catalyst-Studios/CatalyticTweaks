@@ -188,6 +188,7 @@ public class Config
     }
 
     private static final ModConfigSpec.BooleanValue with_commas = KJS_BUILDER.comment("Should the copy text message has ' or not").define("KJS.with_commas", true);
+    private static final ModConfigSpec.BooleanValue compact = KJS_BUILDER.comment("Should the copy text message for nbt be compacted").define("KJS.compact", false);
 
     public static final ModConfigSpec PIPEZ_SPEC = PIPEZ_BUILDER.build();
     public static final ModConfigSpec MMR_SPEC = MMR_BUILDER.build();
@@ -203,7 +204,9 @@ public class Config
     // MMR
     public static boolean shouldmmrdoonerecipe;
 
+    //KJS
     public static boolean COMMAS;
+    public static boolean COMPACT;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -262,6 +265,7 @@ public class Config
         else if(eventSpec == KJS_SPEC)
         {
             COMMAS = with_commas.get();
+            COMPACT = compact.get();
         }
     }
 }
