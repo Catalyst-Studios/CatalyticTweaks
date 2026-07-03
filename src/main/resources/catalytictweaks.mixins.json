@@ -30,7 +30,8 @@
     "emi.Runtime",
     "pipez.PipezMixin",
     "sfml.ProgramEditorColorsMixin",
-    "kjs.MixinKubeJSCommands"
+    "kjs.MixinKubeJSCommands",
+    "kjs.BuilderBaseMixin"
   ],
   "client": [],
   "server": [],

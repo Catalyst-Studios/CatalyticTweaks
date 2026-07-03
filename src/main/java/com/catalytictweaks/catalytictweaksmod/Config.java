@@ -189,6 +189,14 @@ public class Config
 
     private static final ModConfigSpec.BooleanValue with_commas = KJS_BUILDER.comment("Should the copy text message has ' or not").define("KJS.with_commas", true);
     private static final ModConfigSpec.BooleanValue compact = KJS_BUILDER.comment("Should the copy text message for nbt be compacted").define("KJS.compact", false);
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> SILENCED_NAMESPACES = KJS_BUILDER
+        .comment("List of namespaces where KubeJS automatic lang generation should be disabled.",
+                 "This allows your custom .json lang files to handle translations natively.")
+        .defineList("KJS.silenced_namespaces", 
+                List.of("catalyst", "catalystcore", catalytictweaks.MODID, "catalystgraves", "catalystgrave"),
+                () -> "",
+                obj -> obj instanceof String
+        );
 
     public static final ModConfigSpec PIPEZ_SPEC = PIPEZ_BUILDER.build();
     public static final ModConfigSpec MMR_SPEC = MMR_BUILDER.build();
