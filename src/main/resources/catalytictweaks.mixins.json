@@ -28,6 +28,7 @@
     "jei.Runtime",
     "jei.Entry",
     "emi.Runtime",
+    "emi.ReloadWorkerMixin",
     "pipez.PipezMixin",
     "sfml.ProgramEditorColorsMixin",
     "kjs.MixinKubeJSCommands",

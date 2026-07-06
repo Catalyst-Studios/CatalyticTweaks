@@ -6,6 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
 
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
@@ -20,7 +21,7 @@ import com.catalytictweaks.catalytictweaksmod.Config;
 public abstract class BuilderBaseMixin
 {
     @Shadow
-    public ResourceLocation id;
+    public @Final ResourceLocation id;
     
     @Inject(method = "generateLang", at = @At("HEAD"), cancellable = true)
     private void onGenerateLang(LangKubeEvent lang, CallbackInfo ci)

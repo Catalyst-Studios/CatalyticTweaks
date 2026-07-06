@@ -3,6 +3,8 @@ package com.catalytictweaks.catalytictweaksmod.mixin.mmr;
 import es.degrassi.mmreborn.common.machine.component.EnergyComponent;
 import es.degrassi.mmreborn.common.machine.MachineComponent;
 import es.degrassi.mmreborn.common.util.IEnergyHandler;
+
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -15,7 +17,7 @@ import com.catalytictweaks.catalytictweaksmod.mmr.CompositeEnergyHandler;
 public abstract class EnergyComponentMixin extends MachineComponent<IEnergyHandler>
 {
 
-    @Shadow private IEnergyHandler handler;
+    @Shadow @Final private IEnergyHandler handler;
 
     public EnergyComponentMixin()
     {

@@ -7,6 +7,7 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.block.Block;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -24,10 +25,10 @@ public class CruxRecipeMixin
     @Shadow
     private static List<Block> farmlands;
 
-    @Shadow
+    @Shadow @Final
     private ItemStack seed;
 
-    @Shadow
+    @Shadow @Final
     private ItemStack crux;
 
     @Overwrite
