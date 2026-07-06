@@ -153,6 +153,12 @@ dependencies
 
     compileOnly localRuntime("curse.maven:immersive-engineering-231951:6733669")
 
+    //AlmostUnified
+    compileOnly localRuntime("curse.maven:almostunified-633823:8127603")
+
+    compileOnly localRuntime("curse.maven:mystical-agriculture-246640:8344249")
+    localRuntime("curse.maven:cucumber-272335:8035802")
+
     //For devving
     localRuntime("curse.maven:spark-361579:6225208") //Profilers
     localRuntime("curse.maven:jade-324717:7428884") //Status of machines

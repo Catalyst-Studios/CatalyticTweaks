@@ -31,7 +31,10 @@
     "pipez.PipezMixin",
     "sfml.ProgramEditorColorsMixin",
     "kjs.MixinKubeJSCommands",
-    "kjs.BuilderBaseMixin"
+    "kjs.BuilderBaseMixin",
+    "au.CancelEarlyAUMixin",
+    "au.TriggerLateAUMixin",
+    "ma.CruxRecipeMixin"
   ],
   "client": [],
   "server": [],
