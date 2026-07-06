@@ -17,6 +17,7 @@ import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 @EventBusSubscriber(modid = catalytictweaks.MODID)
+@SuppressWarnings("null")
 public class Config
 {
     private static final ModConfigSpec.Builder PIPEZ_BUILDER = new ModConfigSpec.Builder();
@@ -65,7 +66,6 @@ public class Config
     // SFML
     private static final Map<Integer, ModConfigSpec.ConfigValue<String>> SFM_COLOR_CONFIGS = new HashMap<>();
 
-    @SuppressWarnings("null")
     private static void registerToken(int id, String name, String defaultHex)
     {
         SFM_COLOR_CONFIGS.put(id, SFM_BUILDER.define("COLORS." + name, defaultHex));
@@ -197,6 +197,7 @@ public class Config
                 () -> "",
                 obj -> obj instanceof String
         );
+    private static final ModConfigSpec.BooleanValue au_first = KJS_BUILDER.comment("Should AU be loaded first or later than KubeJS").define("KJS.au_first", true);
 
     public static final ModConfigSpec PIPEZ_SPEC = PIPEZ_BUILDER.build();
     public static final ModConfigSpec MMR_SPEC = MMR_BUILDER.build();
@@ -215,6 +216,7 @@ public class Config
     //KJS
     public static boolean COMMAS;
     public static boolean COMPACT;
+    public static boolean AU_FIRST;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -249,6 +251,7 @@ public class Config
             LOOSE_MATCH_SET.clear();
             for(String id : LOOSE_MATCH_ITEMS.get())
             {
+                @SuppressWarnings("null")
                 ResourceLocation rl = ResourceLocation.tryParse(id);
                 if(rl != null)
                 {
@@ -274,6 +277,7 @@ public class Config
         {
             COMMAS = with_commas.get();
             COMPACT = compact.get();
+            AU_FIRST = au_first.get();
         }
     }
 }
