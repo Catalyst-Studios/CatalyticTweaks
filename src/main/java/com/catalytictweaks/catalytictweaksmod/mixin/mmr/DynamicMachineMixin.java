@@ -16,6 +16,7 @@ import java.util.Optional;
 public class DynamicMachineMixin implements DynamicMachineBridge
 {
     @Unique private Component customComponent = null;
+    @Unique private boolean shouldHide = false;
     @Shadow private ResourceLocation registryName;
     @Shadow private Optional<String> localizedName;
 
@@ -43,5 +44,17 @@ public class DynamicMachineMixin implements DynamicMachineBridge
     public Component getCustomComponent()
     {
         return this.customComponent;
+    }
+
+    @Override
+    public void setShouldHide(boolean hide) 
+    {
+        this.shouldHide = hide;
+    }
+
+    @Override
+    public boolean shouldHide() 
+    {
+        return this.shouldHide;
     }
 }

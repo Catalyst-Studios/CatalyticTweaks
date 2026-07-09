@@ -6,4 +6,7 @@ public interface DynamicMachineBridge
 {
     void setCustomComponent(Component component);
     Component getCustomComponent();
+
+    void setShouldHide(boolean hide);
+    boolean shouldHide();
 }

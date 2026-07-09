@@ -1,12 +1,16 @@
 package com.catalytictweaks.catalytictweaksmod;
 
+import com.catalytictweaks.catalytictweaksmod.network.HideStructurePayload;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import org.slf4j.Logger;
 
+@SuppressWarnings("null")
 @Mod(catalytictweaks.MODID)
 public class catalytictweaks
 {
@@ -20,6 +24,15 @@ public class catalytictweaks
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SFM_SPEC, "CatTweaks/sfm.toml");
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.KJS_SPEC, "CatTweaks/kjs.toml");
         ModItems.register(modEventBus);
+        modEventBus.addListener(catalytictweaks::registerPayloads);
     }
 
+    private static void registerPayloads(RegisterPayloadHandlersEvent event)
+    {
+        PayloadRegistrar registrar = event.registrar("1");
+        registrar.playToClient(
+            HideStructurePayload.TYPE,
+            HideStructurePayload.STREAM_CODEC,
+            (payload, context) -> HideStructurePayload.handleClient(payload, context));
+    }
 }
