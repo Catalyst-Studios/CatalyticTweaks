@@ -122,14 +122,14 @@ dependencies
     //Needed for compile only
 
     //MMR
-    compileOnly localRuntime("curse.maven:modular-machinery-reborn-1083840:8064444")
+    compileOnly localRuntime("curse.maven:modular-machinery-reborn-1083840:8340236")
     compileOnly localRuntime("curse.maven:modular-machinery-reborn-mekanism-1131856:6394999")
     compileOnly localRuntime("curse.maven:experiencelib-1156551:7705470")
     compileOnly localRuntime("curse.maven:ldlib-626676:8108634")
     
     compileOnly localRuntime("curse.maven:modular-machinery-reborn-ars-nouveau-1132269:7731301")
     compileOnly localRuntime("curse.maven:experiencelib-1156551:6616717")
-    compileOnly localRuntime("curse.maven:athena-841890:7097200")
+    compileOnly localRuntime("curse.maven:athena-841890:8061947")
 
     //KJS
     compileOnly localRuntime("curse.maven:kubejs-238086:7278501")
@@ -140,7 +140,7 @@ dependencies
     compileOnly localRuntime("curse.maven:jei-238222:7420587")
 
     //Pipez
-    compileOnly("curse.maven:pipez-443900:5609056")
+    compileOnly localRuntime("curse.maven:pipez-443900:5609056")
 
     //Mekanism (needed for mmr)
     compileOnly localRuntime("curse.maven:mekanism-268560:7132168") //Tanks
