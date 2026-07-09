@@ -19,7 +19,8 @@ public abstract class ItemHandlerMixin
 
     @Shadow public abstract boolean canPlaceOutput(ItemSlot component, ItemStack stack);
 
-    private AbstractHandler<ItemSlot, ItemStack> self()
+    @SuppressWarnings("unchecked")
+	private AbstractHandler<ItemSlot, ItemStack> self()
     {
         return (AbstractHandler<ItemSlot, ItemStack>) (Object) this;
     }

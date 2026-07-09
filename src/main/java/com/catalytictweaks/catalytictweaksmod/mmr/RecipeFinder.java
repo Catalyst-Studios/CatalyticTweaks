@@ -49,7 +49,7 @@ public class RecipeFinder
         MachineProcessorCore getCore();
     }
 
-    @SuppressWarnings({"null", "rawtypes"})
+    @SuppressWarnings({"null"})
     public static void init(Context ctx)
     {
         var tile = ctx.getTile();
@@ -78,7 +78,7 @@ public class RecipeFinder
 
         for(int i = filteredRecipes.size() - 1; i >= 0; i--)
         {
-            finalRecipes.add(new RecipeChecker(filteredRecipes.get(i)));
+            finalRecipes.add(new RecipeChecker<>(filteredRecipes.get(i)));
         }
         ctx.setRecipes(finalRecipes);
 

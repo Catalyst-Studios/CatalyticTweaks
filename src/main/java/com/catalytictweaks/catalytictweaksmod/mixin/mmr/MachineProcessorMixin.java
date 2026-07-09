@@ -32,7 +32,8 @@ public abstract class MachineProcessorMixin
 
     @Shadow protected abstract void init();
 
-    @Overwrite
+    @SuppressWarnings("null")
+	@Overwrite
     public void tick()
     {
         if(!this.initialized) this.init();

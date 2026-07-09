@@ -76,7 +76,8 @@ public abstract class EnergyHatchMixin extends BlockEntitySynchronized
         return extractable;
     }
 
-    @Unique
+    @SuppressWarnings("null")
+	@Unique
     private void syncEnergyIfNeeded()
     {
         if (this.level instanceof ServerLevel serverLevel)

@@ -65,7 +65,8 @@ public class ControllerContainerMixin
         cir.setReturnValue(pages);
     }
 
-    public ContainerBase<MachineControllerEntity> self()
+    @SuppressWarnings("unchecked")
+	public ContainerBase<MachineControllerEntity> self()
     {
         return (ContainerBase<MachineControllerEntity>) (Object) this;
     }

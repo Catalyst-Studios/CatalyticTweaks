@@ -14,6 +14,7 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 import net.neoforged.neoforge.fluids.crafting.FluidIngredient;
 
+@SuppressWarnings("null")
 @Pseudo
 @Mixin(FluidComponent.class)
 public abstract class FluidComponentMixin
@@ -22,7 +23,8 @@ public abstract class FluidComponentMixin
     @Shadow protected @Final FluidHandler handler;
     
     @Overwrite
-    public void removeFromInputs(FluidIngredient ingredient, int amount) {
+    public void removeFromInputs(FluidIngredient ingredient, int amount)
+    {
         long toRemove = amount;
 
         for(FluidStack targetFluid : ingredient.getStacks())
@@ -41,7 +43,8 @@ public abstract class FluidComponentMixin
         }
     }
 
-    @Overwrite
+    @SuppressWarnings("unchecked")
+	@Overwrite
     public <C extends MachineComponent<FluidHandler>> C merge(C c)
     {
         FluidComponent comp = (FluidComponent) c;

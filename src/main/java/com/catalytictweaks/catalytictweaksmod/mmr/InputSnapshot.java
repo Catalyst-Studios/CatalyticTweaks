@@ -36,10 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
-
-@Mixin
+@SuppressWarnings("null")
 public class InputSnapshot
 {
 
@@ -177,7 +174,6 @@ public class InputSnapshot
         }
     }
 
-    @Unique
     private void addStackToSnapshot(ItemStack newStack)
     {
         for(ItemStack existing : itemStacks)

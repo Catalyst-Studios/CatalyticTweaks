@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
-
+@SuppressWarnings({"unchecked", "null"})
 @Pseudo
 @Mixin(value = RequirementList.RequirementWithFunction.class)
 public abstract class RequirementWithFunctionMixin<R extends IRequirement<C, T>, C extends MachineComponent<T>, T>
@@ -80,7 +80,7 @@ public abstract class RequirementWithFunctionMixin<R extends IRequirement<C, T>,
             return CraftingResult.error(Component.literal("Mixin Error: RecipeRequirement interface not applied"));
         }
         
-        List<C> components = ((IRecipeRequirement<C, T>) requirement).findComponents(manager, context);
+		List<C> components = ((IRecipeRequirement<C, T>) requirement).findComponents(manager, context);
 
         if(components == null || components.isEmpty())
         {

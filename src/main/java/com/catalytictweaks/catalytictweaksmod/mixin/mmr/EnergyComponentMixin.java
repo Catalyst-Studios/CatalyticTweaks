@@ -24,7 +24,8 @@ public abstract class EnergyComponentMixin extends MachineComponent<IEnergyHandl
         super(null);
     }
 
-    @Overwrite(remap = false)
+    @SuppressWarnings({ "null", "unchecked" })
+	@Overwrite(remap = false)
     public <C extends MachineComponent<IEnergyHandler>> C merge(C c)
     {
         EnergyComponent other = (EnergyComponent) (Object) c;
