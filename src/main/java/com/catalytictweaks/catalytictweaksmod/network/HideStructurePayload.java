@@ -7,6 +7,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import org.jetbrains.annotations.NotNull;
@@ -60,7 +61,7 @@ public record HideStructurePayload(BlockPos controllerPos, Set<BlockPos> hiddenP
     {
         context.enqueueWork(() -> {
             Set<BlockPos> positions = payload.hiddenPositions();
-            if(payload.shouldHide()) 
+            if(payload.shouldHide())
             {
                 ClientStructureHider.addPositions(positions);
             }
@@ -71,5 +72,17 @@ public record HideStructurePayload(BlockPos controllerPos, Set<BlockPos> hiddenP
 
             ClientStructureHider.refreshChunks(positions);
         });
+    }
+
+    public static class MachineHidingConfig
+    {
+        public final Set<Integer> excludedRows;
+        public final Set<Block> excludedBlocks;
+
+        public MachineHidingConfig(Set<Integer> rows, Set<Block> blocks)
+        {
+            this.excludedRows = rows;
+            this.excludedBlocks = blocks;
+        }
     }
 }

@@ -6,11 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.catalytictweaks.catalytictweaksmod.network.HideStructurePayload.MachineHidingConfig;
 import com.catalytictweaks.catalytictweaksmod.sfml.Color;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.config.ModConfigEvent;
@@ -62,6 +64,33 @@ public class Config
                                                                                                        List.of("minecraft:name_tag"),
                                                                                                        () -> "", obj -> obj instanceof String);
     public static final Set<Item> LOOSE_MATCH_SET = new HashSet<>();
+
+    private static final ModConfigSpec.ConfigValue<List<? extends List<?>>> STRUCTURE_HIDING_CONFIG = MMR_BUILDER
+    .comment(
+        "Configuration for structure hiding per machine.\n" +
+        "Each entry is a list: [machine_id, excluded_rows, excluded_blocks]\n" +
+        " - machine_id: string (e.g., 'mmr:fisher')\n" +
+        " - excluded_rows: list of integers (Y-layer indices relative to controller) that should NOT be hidden.\n" +
+        " - excluded_blocks: list of block registry names (strings) that should NOT be hidden.\n" +
+        "If excluded_rows is empty, all layers are hidden (default).\n" +
+        "If excluded_blocks is empty, all blocks are hidden (unless excluded by row)."
+    )
+    .defineList(
+        "structureHiding",
+        List.of(),
+        () -> List.of("", List.of(), List.of()),
+        obj -> {
+            if(!(obj instanceof List<?> entry) || entry.size() != 3) return false;
+            if(!(entry.get(0) instanceof String)) return false;
+            if(!(entry.get(1) instanceof List<?> rows)) return false;
+            if(!(entry.get(2) instanceof List<?> blocks)) return false;
+            for(Object o : rows) if (!(o instanceof Integer)) return false;
+            for(Object o : blocks) if (!(o instanceof String)) return false;
+            return true;
+        }
+    );
+
+    public static final Map<ResourceLocation, MachineHidingConfig> HIDING_CONFIG_MAP = new HashMap<>();
 
     // SFML
     private static final Map<Integer, ModConfigSpec.ConfigValue<String>> SFM_COLOR_CONFIGS = new HashMap<>();
@@ -190,13 +219,11 @@ public class Config
     private static final ModConfigSpec.BooleanValue with_commas = KJS_BUILDER.comment("Should the copy text message has ' or not").define("KJS.with_commas", true);
     private static final ModConfigSpec.BooleanValue compact = KJS_BUILDER.comment("Should the copy text message for nbt be compacted").define("KJS.compact", false);
     public static final ModConfigSpec.ConfigValue<List<? extends String>> SILENCED_NAMESPACES = KJS_BUILDER
-        .comment("List of namespaces where KubeJS automatic lang generation should be disabled.",
-                 "This allows your custom .json lang files to handle translations natively.")
-        .defineList("KJS.silenced_namespaces", 
-                List.of("catalyst", "catalystcore", catalytictweaks.MODID, "catalystgraves", "catalystgrave"),
-                () -> "",
-                obj -> obj instanceof String
-        );
+                                                                                                    .comment("List of namespaces where KubeJS automatic lang generation should be disabled.",
+                                                                                                        "This allows your custom .json lang files to handle translations natively.")
+                                                                                                    .defineList("KJS.silenced_namespaces",
+                                                                                                        List.of("catalyst", "catalystcore", catalytictweaks.MODID, "catalystgraves", "catalystgrave"),
+                                                                                                        () -> "", obj -> obj instanceof String);
     private static final ModConfigSpec.BooleanValue au_first = KJS_BUILDER.comment("Should AU be loaded first or later than KubeJS").define("KJS.au_first", true);
 
     public static final ModConfigSpec PIPEZ_SPEC = PIPEZ_BUILDER.build();
@@ -213,11 +240,12 @@ public class Config
     // MMR
     public static boolean shouldmmrdoonerecipe;
 
-    //KJS
+    // KJS
     public static boolean COMMAS;
     public static boolean COMPACT;
     public static boolean AU_FIRST;
 
+    @SuppressWarnings("unchecked")
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
     {
@@ -251,7 +279,6 @@ public class Config
             LOOSE_MATCH_SET.clear();
             for(String id : LOOSE_MATCH_ITEMS.get())
             {
-                @SuppressWarnings("null")
                 ResourceLocation rl = ResourceLocation.tryParse(id);
                 if(rl != null)
                 {
@@ -261,6 +288,41 @@ public class Config
                         LOOSE_MATCH_SET.add(item);
                     }
                 }
+            }
+            HIDING_CONFIG_MAP.clear();
+            List<? extends List<?>> configList = STRUCTURE_HIDING_CONFIG.get();
+            for(List<?> entry : configList)
+            {
+                String machineId = (String)entry.get(0);
+                List<Integer> rows = (List<Integer>)entry.get(1);
+                List<String> blockNames = (List<String>)entry.get(2);
+
+                ResourceLocation rl = ResourceLocation.tryParse(machineId);
+                if(rl == null)
+                {
+                    catalytictweaks.LOGGER.warn("Invalid machine id in structureHiding config: {}", machineId);
+                    continue;
+                }
+
+                Set<Integer> rowSet = new HashSet<>(rows);
+                Set<Block> blockSet = new HashSet<>();
+                for(String name : blockNames)
+                {
+                    ResourceLocation blockRl = ResourceLocation.tryParse(name);
+                    if(blockRl == null)
+                    {
+                        catalytictweaks.LOGGER.warn("Invalid block id in structureHiding config for {}: {}", machineId, name);
+                        continue;
+                    }
+                    Block block = BuiltInRegistries.BLOCK.get(blockRl);
+                    if(block == BuiltInRegistries.BLOCK.get(BuiltInRegistries.BLOCK.getDefaultKey()))
+                    {
+                        catalytictweaks.LOGGER.warn("Block not found in structureHiding config for {}: {}", machineId, name);
+                        continue;
+                    }
+                    blockSet.add(block);
+                }
+                HIDING_CONFIG_MAP.put(rl, new MachineHidingConfig(rowSet, blockSet));
             }
         }
         else if(eventSpec == SFM_SPEC)

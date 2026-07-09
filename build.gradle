@@ -123,7 +123,7 @@ dependencies
 
     //MMR
     compileOnly localRuntime("curse.maven:modular-machinery-reborn-1083840:8340236")
-    compileOnly localRuntime("curse.maven:modular-machinery-reborn-mekanism-1131856:6394999")
+    compileOnly localRuntime("curse.maven:modular-machinery-reborn-mekanism-1131856:7731276")
     compileOnly localRuntime("curse.maven:experiencelib-1156551:7705470")
     compileOnly localRuntime("curse.maven:ldlib-626676:8108634")
     
