@@ -80,7 +80,6 @@ public class InputSnapshot
         aggregateInputs(manager);
     }
 
-    @SuppressWarnings("unchecked")
     private void aggregateInputs(IComponentManager manager)
     {
         try

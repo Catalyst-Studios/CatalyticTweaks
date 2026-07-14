@@ -8,19 +8,42 @@ import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.bom.BoM;
 import dev.emi.emi.jemi.JemiPlugin;
 import dev.emi.emi.platform.EmiAgnos;
-import dev.emi.emi.registry.*;
-import dev.emi.emi.runtime.*;
+import dev.emi.emi.registry.EmiComparisonDefaults;
+import dev.emi.emi.registry.EmiDragDropHandlers;
+import dev.emi.emi.registry.EmiExclusionAreas;
+import dev.emi.emi.registry.EmiIngredientSerializers;
+import dev.emi.emi.registry.EmiInitRegistryImpl;
+import dev.emi.emi.registry.EmiPluginContainer;
+import dev.emi.emi.registry.EmiRecipeFiller;
+import dev.emi.emi.registry.EmiRecipes;
+import dev.emi.emi.registry.EmiRegistryImpl;
+import dev.emi.emi.registry.EmiStackList;
+import dev.emi.emi.registry.EmiStackProviders;
+import dev.emi.emi.registry.EmiTags;
+import dev.emi.emi.runtime.EmiHidden;
+import dev.emi.emi.runtime.EmiPersistentData;
+import dev.emi.emi.runtime.EmiReloadLog;
+import dev.emi.emi.runtime.EmiReloadManager;
 import dev.emi.emi.screen.EmiScreenManager;
-import dev.emi.emi.search.EmiSearch;
 import net.minecraft.client.Minecraft;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class EmiReload
@@ -33,6 +56,7 @@ public class EmiReload
 
     static
     {
+        Configurator.setLevel("CatalyticTweaks/EmiReloadMixin", Level.INFO);
         syncFromManager();
     }
 
@@ -44,16 +68,24 @@ public class EmiReload
         Thread.currentThread().setName("EmiReloader");
 
         int retries = 3;
+        Map<String, Long> timings = new LinkedHashMap<>();
+        int totalPlugins = 0;
+        int failedInit = 0;
+        int failedReg = 0;
 
         do
         {
             boolean shouldRestart = false;
+            timings.clear();
+            totalPlugins = 0;
+            failedInit = 0;
+            failedReg = 0;
 
             try
             {
                 if(!clear)
                 {
-                    LOGGER.error("Starting EMI reload...");
+                    LOGGER.info("Starting EMI reload...");
                 }
 
                 long reloadStart = System.currentTimeMillis();
@@ -71,12 +103,14 @@ public class EmiReload
                 EmiTags.ADAPTERS_BY_CLASS.map().clear();
                 EmiTags.ADAPTERS_BY_REGISTRY.clear();
                 Thread.yield();
-                LOGGER.error("Clear phase took " + (System.currentTimeMillis() - phaseStart) + "ms");
+                timings.put("Clear data", System.currentTimeMillis() - phaseStart);
 
                 if(clear)
                 {
                     clear = false;
                     syncToManager();
+                    String summary = "EMI cleared in " + (System.currentTimeMillis() - reloadStart) + "ms";
+                    LOGGER.info(summary);
                     break;
                 }
 
@@ -86,6 +120,7 @@ public class EmiReload
                     EmiReloadLog.warn("World is null");
                     break;
                 }
+
                 if(client.level.getRecipeManager() == null)
                 {
                     EmiReloadLog.warn("Recipe Manager is null");
@@ -95,13 +130,18 @@ public class EmiReload
                 phaseStart = System.currentTimeMillis();
                 List<EmiPluginContainer> plugins = Lists.newArrayList();
                 plugins.addAll(EmiAgnos.getPlugins().stream().sorted((a, b) -> Integer.compare(entrypointPriority(a), entrypointPriority(b))).toList());
+                
                 if(EmiAgnos.isModLoaded("jei"))
                 {
                     plugins.add(new EmiPluginContainer(new JemiPlugin(), "jemi"));
                 }
-                LOGGER.error("Plugin collection took " + (System.currentTimeMillis() - phaseStart) + "ms");
+
+                timings.put("Plugin collection", System.currentTimeMillis() - phaseStart);
+                totalPlugins = plugins.size();
 
                 EmiInitRegistry initRegistry = new EmiInitRegistryImpl();
+                long initPhaseStart = System.currentTimeMillis();
+                
                 for(EmiPluginContainer container : plugins)
                 {
                     phaseStart = System.currentTimeMillis();
@@ -112,6 +152,7 @@ public class EmiReload
                     }
                     catch(Throwable e)
                     {
+                        failedInit++;
                         EmiReloadLog.warn("Exception initializing plugin provided by " + container.id(), e);
                         if(restart)
                         {
@@ -120,9 +161,11 @@ public class EmiReload
                         }
                         continue;
                     }
-                    LOGGER.error("Initialized plugin " + container.id() + " in " + (System.currentTimeMillis() - phaseStart) + "ms");
+                    LOGGER.info("Initialized plugin " + container.id() + " in " + (System.currentTimeMillis() - phaseStart) + "ms");
                     Thread.yield();
                 }
+                timings.put("Plugin initialization", System.currentTimeMillis() - initPhaseStart);
+
                 if(shouldRestart || restart)
                 {
                     if(restart)
@@ -135,15 +178,15 @@ public class EmiReload
                 EmiHidden.reload();
                 EmiReloadManager.step(EmiPort.literal("Processing tags"), 1000L);
                 EmiTags.reload();
+                timings.put("Tag processing", System.currentTimeMillis() - phaseStart);
                 Thread.yield();
-                LOGGER.error("Tag processing took " + (System.currentTimeMillis() - phaseStart) + "ms");
-
+                
                 phaseStart = System.currentTimeMillis();
                 EmiReloadManager.step(EmiPort.literal("Constructing index"), 1000L);
                 EmiComparisonDefaults.comparisons = new HashMap<>();
                 EmiStackList.reload();
+                timings.put("Index construction", System.currentTimeMillis() - phaseStart);
                 Thread.yield();
-                LOGGER.error("Index construction took " + (System.currentTimeMillis() - phaseStart) + "ms");
 
                 if(restart)
                 {
@@ -152,49 +195,105 @@ public class EmiReload
                     continue;
                 }
 
-                int failedPlugins = 0;
-                EmiRegistry registry = new EmiRegistryImpl();
+
+                EmiRegistry registry = new ConcurrentEmiRegistry(new EmiRegistryImpl());
+
+                // List<EmiPluginContainer> phase1Core = new ArrayList<>();
+                List<EmiPluginContainer> phase2Parallel = new ArrayList<>();
+                List<EmiPluginContainer> phase3Sequential = new ArrayList<>();
+
                 for(EmiPluginContainer container : plugins)
                 {
+                    phase2Parallel.add(container);
+                    // String id = container.id();
+                    // if(id.equals("kubejs") || id.equals("modular_machinery_reborn"))
+                    // {
+                    //     phase3Sequential.add(container);
+                    // }
+                    // else
+                    // {
+                    //     phase2Parallel.add(container);
+                    // }
+                }
 
-                    phaseStart = System.currentTimeMillis();
+                AtomicInteger failedCount = new AtomicInteger(0);
+                AtomicBoolean threadRestart = new AtomicBoolean(false);
+
+                Consumer<EmiPluginContainer> loadPlugin = (container) ->
+                {
+                    long phaseStartInner = System.currentTimeMillis();
                     EmiReloadManager.step(EmiPort.literal("Loading plugin from " + container.id()), 2000L);
+                    
                     try
                     {
                         container.plugin().register(registry);
                     }
                     catch(Throwable e)
                     {
-                        failedPlugins++;
+                        failedCount.incrementAndGet();
                         LOGGER.error("Exception loading plugin provided by {}: {}", container.id(), e.getMessage(), e);
                         if(restart)
                         {
-                            shouldRestart = true;
+                            threadRestart.set(true);
+                        }
+                    }
+
+                    long elapsed = System.currentTimeMillis() - phaseStartInner;
+                    LOGGER.info("Loaded plugin {} in {}ms", container.id(), elapsed);
+                    Thread.yield();
+                };
+
+                // for(EmiPluginContainer container : phase1Core)
+                // {
+                //     loadPlugin.accept(container);
+                //     if(threadRestart.get() || restart)
+                //     {
+                //         break;
+                //     }
+                // }
+
+                long regPhaseStart = System.currentTimeMillis();
+                if(!threadRestart.get() && !restart)
+                {
+                    ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+                    List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+                    for(EmiPluginContainer container : phase2Parallel)
+                    {
+                        futures.add(CompletableFuture.runAsync(() -> loadPlugin.accept(container), executor));
+                    }
+
+                    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                    executor.shutdown();
+                }
+
+                if(!threadRestart.get() && !restart)
+                {
+                    for(EmiPluginContainer container : phase3Sequential)
+                    {
+                        loadPlugin.accept(container);
+                        if(threadRestart.get() || restart)
+                        {
                             break;
                         }
-                        continue;
                     }
-
-                    long elapsed = System.currentTimeMillis() - phaseStart;
-                    LOGGER.error("Loaded plugin {} in {}ms", container.id(), elapsed);
-                    
-                    if(restart)
-                    {
-                        shouldRestart = true;
-                        break;
-                    }
-                    Thread.yield();
                 }
+                timings.put("Plugin registration", System.currentTimeMillis() - regPhaseStart);
+                failedReg = failedCount.get();
 
-                if(failedPlugins > 0)
+                if(threadRestart.get())
                 {
-                    LOGGER.warn("{} plugin(s) failed to load during registration.", failedPlugins);
+                    shouldRestart = true;
                 }
+
 
                 if(shouldRestart || restart)
                 {
                     if(restart)
+                    {
                         shouldRestart = true;
+                    }
+
                     syncToManager();
                     continue;
                 }
@@ -202,13 +301,14 @@ public class EmiReload
                 phaseStart = System.currentTimeMillis();
                 EmiReloadManager.step(EmiPort.literal("Baking index"), 2000L);
                 EmiStackList.bake();
+                timings.put("Index baking", System.currentTimeMillis() - phaseStart);
                 Thread.yield();
-                LOGGER.error("Index baking took " + (System.currentTimeMillis() - phaseStart) + "ms");
 
                 phaseStart = System.currentTimeMillis();
                 EmiReloadManager.step(EmiPort.literal("Registering late recipes"), 2000L);
                 Objects.requireNonNull(registry);
                 Consumer<EmiRecipe> registerLateRecipe = registry::addRecipe;
+                
                 for(Consumer<Consumer<EmiRecipe>> consumer : EmiRecipes.lateRecipes)
                 {
                     try
@@ -225,29 +325,34 @@ public class EmiReload
                         }
                     }
                 }
+
+                timings.put("Late recipes", System.currentTimeMillis() - phaseStart);
                 Thread.yield();
-                LOGGER.error("Late recipes registration took " + (System.currentTimeMillis() - phaseStart) + "ms");
+
                 if(shouldRestart || restart)
                 {
                     if(restart)
+                    {
                         shouldRestart = true;
+                    }
+
                     syncToManager();
                     continue;
                 }
 
                 phaseStart = System.currentTimeMillis();
                 EmiReloadManager.step(EmiPort.literal("Baking recipes"), 3000L);
-                EmiRecipes.bake();
+                EmiRecipesCat.bake();
                 BoM.reload();
                 EmiPersistentData.load();
+                timings.put("Recipe baking", System.currentTimeMillis() - phaseStart);
                 Thread.yield();
-                LOGGER.error("Recipe baking took " + (System.currentTimeMillis() - phaseStart) + "ms");
 
                 phaseStart = System.currentTimeMillis();
                 EmiReloadManager.step(EmiPort.literal("Baking search"), 3000L);
-                EmiSearch.bake();
+                EmiSearchCat.bake();
+                timings.put("Search baking", System.currentTimeMillis() - phaseStart);
                 Thread.yield();
-                LOGGER.error("Search baking took " + (System.currentTimeMillis() - phaseStart) + "ms");
 
                 EmiReloadManager.step(EmiPort.literal("Finishing up"));
                 Minecraft.getInstance().execute(() -> {
@@ -256,7 +361,21 @@ public class EmiReload
                 });
 
                 EmiReloadLog.bake();
-                LOGGER.error("Reloaded EMI in " + (System.currentTimeMillis() - reloadStart) + "ms");
+
+                long totalTime = System.currentTimeMillis() - reloadStart;
+                String summary = "EMI reload summary:\n" +
+                        "  Clear data: " + timings.get("Clear data") + "ms\n" +
+                        "  Plugin collection: " + timings.get("Plugin collection") + "ms\n" +
+                        "  Plugin initialization: " + timings.get("Plugin initialization") + "ms (" + totalPlugins + " plugins, " + failedInit + " init failures)\n" +
+                        "  Tag processing: " + timings.get("Tag processing") + "ms\n" +
+                        "  Index construction: " + timings.get("Index construction") + "ms\n" +
+                        "  Plugin registration: " + timings.get("Plugin registration") + "ms (" + (totalPlugins - failedReg) + " loaded, " + failedReg + " failures)\n" +
+                        "  Index baking: " + timings.get("Index baking") + "ms\n" +
+                        "  Late recipes: " + timings.get("Late recipes") + "ms\n" +
+                        "  Recipe baking: " + timings.get("Recipe baking") + "ms\n" +
+                        "  Search baking: " + timings.get("Search baking") + "ms\n" +
+                        "  Total: " + totalTime + "ms";
+                LOGGER.info(summary);
                 status = 2;
                 syncToManager();
                 break;
@@ -266,9 +385,9 @@ public class EmiReload
                 EmiReloadLog.warn("Critical error occurred during reload:", e);
                 status = -1;
                 syncToManager();
-                if(retries-- > 0)
+                if(retries-- == 0)
                 {
-                    restart = true;
+                    restart = false;
                     syncToManager();
                 }
                 else
