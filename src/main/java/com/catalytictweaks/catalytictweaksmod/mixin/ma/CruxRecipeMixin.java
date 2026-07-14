@@ -31,6 +31,7 @@ public class CruxRecipeMixin
     @Shadow @Final
     private ItemStack crux;
 
+    @SuppressWarnings("null")
     @Overwrite
     public List<Ingredient> getIngredients()
     {

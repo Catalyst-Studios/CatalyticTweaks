@@ -18,7 +18,8 @@ import net.minecraft.world.InteractionHand;
 @Mixin(KubeJSCommands.class)
 public abstract class MixinKubeJSCommands
 {
-    @Inject(method = "register", at = @At("RETURN"))
+    @SuppressWarnings("null")
+@Inject(method = "register", at = @At("RETURN"))
     private static void addHandSubcommands(CommandDispatcher<CommandSourceStack> dispatcher, CallbackInfo ci)
     {
         var kubejsNode = dispatcher.getRoot().getChild("kubejs");
