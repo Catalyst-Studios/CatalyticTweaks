@@ -23,7 +23,7 @@ license="MIT"
 modId="catalytictweaks" #mandatory
 
 # The version number of the mod
-version="1.0.15" #mandatory
+version="1.0.16" #mandatory
 
 # A display name for the mod
 displayName="Catalytic Tweaks" #mandatory
@@ -44,7 +44,7 @@ credits="To MMR author, Pipez author and SFM for having their code visible" #opt
 authors="Apex Slayer, Titop54" #optional
 
 # The description text for the mod (multi line!) (#mandatory)
-description='''Mod to make changes to multiple mods. Currently to MMR, Pipez and SFM'''
+description='''Mod to make changes to multiple mods to try to optimize them or adding more functions!'''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
 [[mixins]]

@@ -1,5 +1,6 @@
 package com.catalytictweaks.catalytictweaksmod.emi;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -24,12 +25,23 @@ import net.minecraft.world.item.crafting.RecipeManager;
 
 public class ConcurrentEmiRegistry implements EmiRegistry
 {
-
     private final EmiRegistry delegate;
+    private final ConcurrentLinkedQueue<Consumer<EmiRegistry>> actions = new ConcurrentLinkedQueue<>();
+    private volatile boolean buffering = true;
 
     public ConcurrentEmiRegistry(EmiRegistry delegate)
     {
         this.delegate = delegate;
+    }
+
+    public void flush()
+    {
+        this.buffering = false;
+        Consumer<EmiRegistry> action;
+        while((action = actions.poll()) != null)
+        {
+            action.accept(delegate);
+        }
     }
 
     public EmiRegistry getRegistry()
@@ -38,129 +50,262 @@ public class ConcurrentEmiRegistry implements EmiRegistry
     }
 
     @Override
-    public synchronized void addCategory(EmiRecipeCategory category)
+    public void addCategory(EmiRecipeCategory category)
     {
-        delegate.addCategory(category);
+        if(buffering)
+        {
+            actions.add(r -> r.addCategory(category));
+        }
+        else
+        {
+            delegate.addCategory(category);
+        }
     }
 
     @Override
-    public synchronized void addWorkstation(EmiRecipeCategory category, EmiIngredient workstation)
+    public void addWorkstation(EmiRecipeCategory category, EmiIngredient workstation)
     {
-        delegate.addWorkstation(category, workstation);
+        if(buffering)
+        {
+            actions.add(r -> r.addWorkstation(category, workstation));
+        }
+        else
+        {
+            delegate.addWorkstation(category, workstation);
+        }
     }
 
     @Override
-    public synchronized void addRecipe(EmiRecipe recipe)
+    public void addRecipe(EmiRecipe recipe)
     {
-        delegate.addRecipe(recipe);
+        if(buffering)
+        {
+            actions.add(r -> r.addRecipe(recipe));
+        }
+        else
+        {
+            delegate.addRecipe(recipe);
+        }
     }
 
     @Override
-    public synchronized void addAlias(EmiIngredient ingredient, Component alias)
+    public void addAlias(EmiIngredient ingredient, Component alias)
     {
-        delegate.addAlias(ingredient, alias);
+        if(buffering)
+        {
+            actions.add(r -> r.addAlias(ingredient, alias));
+        }
+        else
+        {
+            delegate.addAlias(ingredient, alias);
+        }
     }
 
     @Override
-    public synchronized void addDeferredRecipes(Consumer<Consumer<EmiRecipe>> recipes)
+    public void addDeferredRecipes(Consumer<Consumer<EmiRecipe>> recipes)
     {
-        delegate.addDeferredRecipes(recipes);
+        if(buffering)
+        {
+            actions.add(r -> r.addDeferredRecipes(recipes));
+        }
+        else
+        {
+            delegate.addDeferredRecipes(recipes);
+        }
     }
 
     @Override
-    public synchronized<T extends Screen> void addDragDropHandler(Class<T> screenClass, EmiDragDropHandler<T> handler)
+    public <T extends Screen> void addDragDropHandler(Class<T> screenClass, EmiDragDropHandler<T> handler)
     {
-        delegate.addDragDropHandler(screenClass, handler);
+        if(buffering)
+        {
+            actions.add(r -> r.addDragDropHandler(screenClass, handler));
+        }
+        else
+        {
+            delegate.addDragDropHandler(screenClass, handler);
+        }
     }
 
     @Override
-    public synchronized void addEmiStack(EmiStack stack)
+    public void addEmiStack(EmiStack stack)
     {
-        delegate.addEmiStack(stack);
+        if(buffering)
+        {
+            actions.add(r -> r.addEmiStack(stack));
+        }
+        else
+        {
+            delegate.addEmiStack(stack);
+        }
     }
 
     @Override
-    public synchronized void addEmiStackAfter(EmiStack stack, Predicate<EmiStack> predicate)
+    public void addEmiStackAfter(EmiStack stack, Predicate<EmiStack> predicate)
     {
-        delegate.addEmiStackAfter(stack, predicate);
+        if(buffering)
+        {
+            actions.add(r -> r.addEmiStackAfter(stack, predicate));
+        }
+        else
+        {
+            delegate.addEmiStackAfter(stack, predicate);
+        }
     }
 
     @Override
-    public synchronized<T extends Screen> void addExclusionArea(Class<T> screenClass, EmiExclusionArea<T> exclusionArea)
+    public <T extends Screen> void addExclusionArea(Class<T> screenClass, EmiExclusionArea<T> exclusionArea)
     {
-        delegate.addExclusionArea(screenClass, exclusionArea);
+        if(buffering)
+        {
+            actions.add(r -> r.addExclusionArea(screenClass, exclusionArea));
+        }
+        else
+        {
+            delegate.addExclusionArea(screenClass, exclusionArea);
+        }
     }
 
     @Override
-    public synchronized void addGenericDragDropHandler(EmiDragDropHandler<Screen> handler)
+    public void addGenericDragDropHandler(EmiDragDropHandler<Screen> handler)
     {
-        delegate.addGenericDragDropHandler(handler);
+        if(buffering)
+        {
+            actions.add(r -> r.addGenericDragDropHandler(handler));
+        }
+        else
+        {
+            delegate.addGenericDragDropHandler(handler);
+        }
     }
 
     @Override
-    public synchronized void addGenericExclusionArea(EmiExclusionArea<Screen> exclusionArea)
+    public void addGenericExclusionArea(EmiExclusionArea<Screen> exclusionArea)
     {
-        delegate.addGenericExclusionArea(exclusionArea);
+        if(buffering)
+        {
+            actions.add(r -> r.addGenericExclusionArea(exclusionArea));
+        }
+        else
+        {
+            delegate.addGenericExclusionArea(exclusionArea);
+        }
     }
 
     @Override
-    public synchronized void addGenericStackProvider(EmiStackProvider<Screen> provider)
+    public void addGenericStackProvider(EmiStackProvider<Screen> provider)
     {
-        delegate.addGenericStackProvider(provider);
+        if(buffering)
+        {
+            actions.add(r -> r.addGenericStackProvider(provider));
+        }
+        else
+        {
+            delegate.addGenericStackProvider(provider);
+        }
     }
 
     @Override
     @Deprecated
-    public synchronized<T extends EmiIngredient> void addIngredientSerializer(Class<T> clazz, EmiIngredientSerializer<T> serializer)
+    public <T extends EmiIngredient> void addIngredientSerializer(Class<T> clazz, EmiIngredientSerializer<T> serializer)
     {
-        delegate.addIngredientSerializer(clazz, serializer);
+        if(buffering)
+        {
+            actions.add(r -> r.addIngredientSerializer(clazz, serializer));
+        }
+        else
+        {
+            delegate.addIngredientSerializer(clazz, serializer);
+        }
     }
 
     @Override
-    public synchronized void addRecipeDecorator(EmiRecipeDecorator decorator)
+    public void addRecipeDecorator(EmiRecipeDecorator decorator)
     {
-        delegate.addRecipeDecorator(decorator);
+        if(buffering)
+        {
+            actions.add(r -> r.addRecipeDecorator(decorator));
+        }
+        else
+        {
+            delegate.addRecipeDecorator(decorator);
+        }
     }
 
     @Override
-    public synchronized<T extends AbstractContainerMenu> void addRecipeHandler(MenuType<T> type, EmiRecipeHandler<T> handler)
+    public <T extends AbstractContainerMenu> void addRecipeHandler(MenuType<T> type, EmiRecipeHandler<T> handler)
     {
-        delegate.addRecipeHandler(type, handler);
+        if(buffering)
+        {
+            actions.add(r -> r.addRecipeHandler(type, handler));
+        }
+        else
+        {
+            delegate.addRecipeHandler(type, handler);
+        }
     }
 
     @Override
-    public synchronized<T extends Screen> void addStackProvider(Class<T> screenClass, EmiStackProvider<T> provider)
+    public <T extends Screen> void addStackProvider(Class<T> screenClass, EmiStackProvider<T> provider)
     {
-        delegate.addStackProvider(screenClass, provider);
+        if(buffering)
+        {
+            actions.add(r -> r.addStackProvider(screenClass, provider));
+        }
+        else
+        {
+            delegate.addStackProvider(screenClass, provider);
+        }
     }
 
     @Override
-    public synchronized RecipeManager getRecipeManager()
+    public RecipeManager getRecipeManager()
     {
         return delegate.getRecipeManager();
     }
 
     @Override
-    public synchronized boolean isStackDisabled(EmiIngredient stack)
+    public boolean isStackDisabled(EmiIngredient stack)
     {
         return delegate.isStackDisabled(stack);
     }
 
     @Override
-    public synchronized void removeEmiStacks(Predicate<EmiStack> predicate)
+    public void removeEmiStacks(Predicate<EmiStack> predicate)
     {
-        delegate.removeEmiStacks(predicate);
+        if(buffering)
+        {
+            actions.add(r -> r.removeEmiStacks(predicate));
+        }
+        else
+        {
+            delegate.removeEmiStacks(predicate);
+        }
     }
 
     @Override
-    public synchronized void removeRecipes(Predicate<EmiRecipe> predicate)
+    public void removeRecipes(Predicate<EmiRecipe> predicate)
     {
-        delegate.removeRecipes(predicate);
+        if(buffering)
+        {
+            actions.add(r -> r.removeRecipes(predicate));
+        }
+        else
+        {
+            delegate.removeRecipes(predicate);
+        }
     }
 
     @Override
-    public synchronized void setDefaultComparison(Object stack, Function<Comparison, Comparison> comparison)
+    public void setDefaultComparison(Object stack, Function<Comparison, Comparison> comparison)
     {
-        delegate.setDefaultComparison(stack, comparison);
+        if(buffering)
+        {
+            actions.add(r -> r.setDefaultComparison(stack, comparison));
+        }
+        else
+        {
+            delegate.setDefaultComparison(stack, comparison);
+        }
     }
 }

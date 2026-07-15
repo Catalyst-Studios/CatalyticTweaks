@@ -3,7 +3,6 @@ package com.catalytictweaks.catalytictweaksmod.emi;
 import com.google.common.collect.Lists;
 import dev.emi.emi.EmiPort;
 import dev.emi.emi.api.EmiInitRegistry;
-import dev.emi.emi.api.EmiRegistry;
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.bom.BoM;
 import dev.emi.emi.jemi.JemiPlugin;
@@ -195,8 +194,7 @@ public class EmiReload
                     continue;
                 }
 
-
-                EmiRegistry registry = new ConcurrentEmiRegistry(new EmiRegistryImpl());
+                ConcurrentEmiRegistry registry = new ConcurrentEmiRegistry(new EmiRegistryImpl());
 
                 // List<EmiPluginContainer> phase1Core = new ArrayList<>();
                 List<EmiPluginContainer> phase2Parallel = new ArrayList<>();
@@ -255,7 +253,16 @@ public class EmiReload
                 long regPhaseStart = System.currentTimeMillis();
                 if(!threadRestart.get() && !restart)
                 {
-                    ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+                    ExecutorService executor = Executors.newFixedThreadPool(
+                        Runtime.getRuntime().availableProcessors(),
+                        r -> {
+                            Thread t = new Thread(r);
+                            t.setName("EMI-Plugin-Loader-" + t.threadId());
+                            t.setDaemon(true);
+                            t.setContextClassLoader(Thread.currentThread().getContextClassLoader());
+                            return t;
+                        }
+                    );
                     List<CompletableFuture<Void>> futures = new ArrayList<>();
 
                     for(EmiPluginContainer container : phase2Parallel)
@@ -278,6 +285,9 @@ public class EmiReload
                         }
                     }
                 }
+
+                registry.flush();
+                
                 timings.put("Plugin registration", System.currentTimeMillis() - regPhaseStart);
                 failedReg = failedCount.get();
 

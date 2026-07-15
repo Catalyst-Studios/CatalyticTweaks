@@ -1,6 +1,5 @@
 package com.catalytictweaks.catalytictweaksmod.emi;
 
-import com.google.common.collect.Sets;
 import dev.emi.emi.EmiPort;
 import dev.emi.emi.EmiUtil;
 import dev.emi.emi.api.stack.EmiIngredient;
@@ -13,6 +12,7 @@ import dev.emi.emi.search.EmiSearch;
 import dev.emi.emi.search.NameQuery;
 import dev.emi.emi.search.SearchStack;
 import dev.emi.emi.runtime.EmiReloadLog;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.client.searchtree.SuffixArray;
 import net.minecraft.core.Holder;
@@ -25,14 +25,9 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ForkJoinPool;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -41,7 +36,9 @@ import org.apache.logging.log4j.core.config.Configurator;
 public class EmiSearchCat
 {
     private static final Logger LOGGER = LoggerFactory.getLogger("CatalyticTweaks/EmiSearchCat");
-    private static final Pattern WORD_SPLITTER = Pattern.compile("[\\s,\\.\\|#:\\(\\)\\{\\}\\[\\]]+");
+    private static final Map<String, String> MOD_NAME_CACHE = new ConcurrentHashMap<>(512);
+    // Caché crítico para deducir palabras repetitivas en tooltips y salvar RAM/GC
+    private static final Map<String, String> TOKEN_CACHE = new ConcurrentHashMap<>(65536);
 
     static
     {
@@ -53,17 +50,17 @@ public class EmiSearchCat
         final EmiStack rawStack;
         final SearchStack searchStack;
         final String name;
-        final List<String> tooltips;
-        final List<String> modNames;
+        final Set<String> tooltipTokens;
+        final Set<String> modNames;
         final String path;
 
-        SearchData(EmiStack rawStack, SearchStack searchStack, String name, List<String> tooltips,
-            List<String> modNames, String path)
+        SearchData(EmiStack rawStack, SearchStack searchStack, String name, Set<String> tooltipTokens,
+            Set<String> modNames, String path)
         {
             this.rawStack = rawStack;
             this.searchStack = searchStack;
             this.name = name;
-            this.tooltips = tooltips;
+            this.tooltipTokens = tooltipTokens;
             this.modNames = modNames;
             this.path = path;
         }
@@ -85,12 +82,6 @@ public class EmiSearchCat
     {
         long start = System.currentTimeMillis();
 
-        SuffixArray<SearchStack> names = new SuffixArray<>();
-        SuffixArray<SearchStack> tooltips = new SuffixArray<>();
-        SuffixArray<SearchStack> mods = new SuffixArray<>();
-        SuffixArray<EmiStack> aliases = new SuffixArray<>();
-        Set<EmiStack> bakedStacks = Sets.newIdentityHashSet();
-
         List<EmiStack> stacks = EmiStackList.stacks;
         if(stacks == null || stacks.isEmpty())
         {
@@ -101,8 +92,19 @@ public class EmiSearchCat
         boolean old = EmiConfig.appendItemModId;
         EmiConfig.appendItemModId = false;
 
+        // Limpiamos el caché en cada bake para evitar fugas de memoria
+        TOKEN_CACHE.clear();
+
         ClassLoader modClassLoader = Thread.currentThread().getContextClassLoader();
         ForkJoinPool customPool = createCustomThreadPool(modClassLoader);
+
+        ExecutorService bakingExecutor = Executors.newFixedThreadPool(4, r -> {
+            Thread t = new Thread(r);
+            t.setName("EMI-Search-Baker-" + t.threadId());
+            t.setDaemon(true);
+            t.setContextClassLoader(modClassLoader);
+            return t;
+        });
 
         try
         {
@@ -114,25 +116,68 @@ public class EmiSearchCat
             long gatherTime = System.currentTimeMillis() - start;
             LOGGER.info("Parallel info gathered of " + gatheredData.size() + " items in " + gatherTime + "ms");
 
-            populateSuffixArrays(gatheredData, bakedStacks, names, tooltips, mods);
+            SuffixArray<SearchStack> names = new SuffixArray<>();
+            SuffixArray<SearchStack> tooltips = new SuffixArray<>();
+            SuffixArray<SearchStack> mods = new SuffixArray<>();
+            SuffixArray<EmiStack> aliases = new SuffixArray<>();
+            Set<EmiStack> bakedStacks = new ObjectOpenHashSet<>(gatheredData.size());
 
-            List<AliasData> gatheredAliases = gatherAliases();
-            for(AliasData aliasData : gatheredAliases)
-            {
-                if(aliasData.stack != null)
+            CompletableFuture<Void> namesFuture = CompletableFuture.runAsync(() -> {
+                for(int i = 0; i < gatheredData.size(); i++)
                 {
-                    aliases.add(aliasData.stack.copy().comparison(EmiPort.compareStrict()), aliasData.text);
+                    SearchData data = gatheredData.get(i);
+                    bakedStacks.add(data.rawStack);
+                    if(data.name != null)
+                    {
+                        names.add(data.searchStack, data.name);
+                    }
+                    if(data.path != null)
+                    {
+                        names.add(data.searchStack, data.path);
+                    }
                 }
-            }
+                names.generate();
+            }, bakingExecutor);
 
-            long genStart = System.currentTimeMillis();
-            customPool.submit(() -> {
-                List<Runnable> tasks = List.of(names::generate, tooltips::generate, mods::generate, aliases::generate);
-                tasks.parallelStream().forEach(Runnable::run);
-            })
-            .get();
+            CompletableFuture<Void> tooltipsFuture = CompletableFuture.runAsync(() -> {
+                for(int i = 0; i < gatheredData.size(); i++)
+                {
+                    SearchData data = gatheredData.get(i);
+                    for(String token : data.tooltipTokens)
+                    {
+                        tooltips.add(data.searchStack, token);
+                    }
+                }
+                tooltips.generate();
+            }, bakingExecutor);
 
-            long genTime = System.currentTimeMillis() - genStart;
+            CompletableFuture<Void> modsFuture = CompletableFuture.runAsync(() -> {
+                for(int i = 0; i < gatheredData.size(); i++)
+                {
+                    SearchData data = gatheredData.get(i);
+                    for(String modName : data.modNames)
+                    {
+                        mods.add(data.searchStack, modName);
+                    }
+                }
+                mods.generate();
+            }, bakingExecutor);
+
+            CompletableFuture<Void> aliasesFuture = CompletableFuture.runAsync(() -> {
+                List<AliasData> gatheredAliases = gatherAliases();
+                for(int i = 0; i < gatheredAliases.size(); i++)
+                {
+                    AliasData aliasData = gatheredAliases.get(i);
+                    if(aliasData.stack != null)
+                    {
+                        aliases.add(aliasData.stack.copy().comparison(EmiPort.compareStrict()), aliasData.text);
+                    }
+                }
+                aliases.generate();
+            }, bakingExecutor);
+
+            CompletableFuture<Void> allFutures = CompletableFuture.allOf(namesFuture, tooltipsFuture, modsFuture, aliasesFuture);
+            allFutures.get();
 
             EmiConfig.appendItemModId = old;
 
@@ -142,7 +187,7 @@ public class EmiSearchCat
             EmiSearch.aliases = aliases;
             EmiSearch.bakedStacks = bakedStacks;
 
-            LOGGER.info("Completed in " + (System.currentTimeMillis() - start) + "ms! (Sufix made in " + genTime + "ms)");
+            LOGGER.info("Completed in " + (System.currentTimeMillis() - start) + "ms!");
         }
         catch(Exception e)
         {
@@ -154,6 +199,7 @@ public class EmiSearchCat
         {
             customPool.shutdown();
             customPool.close();
+            bakingExecutor.shutdown();
         }
     }
 
@@ -171,7 +217,7 @@ public class EmiSearchCat
 
     private static SearchData extractSearchData(EmiStack stack)
     {
-        if(stack == null)
+        if(stack == null || stack.isEmpty())
         {
             return null;
         }
@@ -181,23 +227,31 @@ public class EmiSearchCat
             SearchStack searchStack = new SearchStack(stack);
 
             Component nameComp = NameQuery.getText(stack);
-            String nameStr = nameComp != null ? nameComp.getString().toLowerCase() : null;
+            String nameStr = null;
+            if (nameComp != null)
+            {
+                String rawName = nameComp.getString().toLowerCase(Locale.ROOT);
+                nameStr = TOKEN_CACHE.computeIfAbsent(rawName, k -> k);
+            }
 
-            List<String> tooltipList = extractTooltipTexts(stack);
-            List<String> modNamesList = new ArrayList<>();
+            Set<String> tooltipTokens = extractTooltipTokens(stack);
+            Set<String> modNamesSet = new ObjectOpenHashSet<>(4);
             String pathStr = null;
 
             ResourceLocation id = stack.getId();
             if(id != null)
             {
-                modNamesList.add(EmiUtil.getModName(id.getNamespace()).toLowerCase());
-                modNamesList.add(id.getNamespace().toLowerCase());
-                pathStr = id.getPath().toLowerCase();
+                String namespace = id.getNamespace();
+                String modName = MOD_NAME_CACHE.computeIfAbsent(namespace, k -> EmiUtil.getModName(k).toLowerCase(Locale.ROOT));
+                modNamesSet.add(modName);
+                modNamesSet.add(namespace);
+                
+                pathStr = id.getPath();
             }
 
-            extractEnchantmentMods(stack, modNamesList);
+            extractEnchantmentMods(stack, modNamesSet);
 
-            return new SearchData(stack, searchStack, nameStr, tooltipList, modNamesList, pathStr);
+            return new SearchData(stack, searchStack, nameStr, tooltipTokens, modNamesSet, pathStr);
         }
         catch(Exception e)
         {
@@ -205,36 +259,96 @@ public class EmiSearchCat
         }
     }
 
-    private static List<String> extractTooltipTexts(EmiStack stack)
+    private static Set<String> extractTooltipTokens(EmiStack stack)
     {
         List<Component> tooltip = stack.getTooltipText();
-        if(tooltip == null)
+        if(tooltip == null || tooltip.size() <= 1)
         {
-            return List.of();
+            return Set.of();
         }
 
-        List<String> tooltipList = new ArrayList<>(tooltip.size() - 1);
-
+        Set<String> tokensSet = new ObjectOpenHashSet<>(8);
         for(int i = 1; i < tooltip.size(); ++i)
         {
             Component text = tooltip.get(i);
             if(text != null)
             {
-                tooltipList.add(text.getString().toLowerCase());
+                String line = text.getString();
+                tokenize(line, tokensSet);
             }
         }
 
-        return tooltipList;
+        return tokensSet;
     }
 
-    private static void extractEnchantmentMods(EmiStack stack, List<String> modNamesList)
+    private static void tokenize(String line, Set<String> tokensSet)
+    {
+        int len = line.length();
+        int start = -1;
+        for (int i = 0; i < len; i++)
+        {
+            char c = line.charAt(i);
+            if (isSeparator(c))
+            {
+                if (start != -1)
+                {
+                    addToken(line, start, i, tokensSet);
+                    start = -1;
+                }
+            }
+            else
+            {
+                if (start == -1)
+                {
+                    start = i;
+                }
+            }
+        }
+        if (start != -1)
+        {
+            addToken(line, start, len, tokensSet);
+        }
+    }
+
+    private static boolean isSeparator(char c)
+    {
+        return Character.isWhitespace(c) || 
+               c == ',' || c == '.' || c == '|' || c == '#' || c == ':' ||
+               c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']' ||
+               c == '+' || c == '_' || c == '-';
+    }
+
+    private static void addToken(String line, int start, int end, Set<String> tokensSet)
+    {
+        int len = end - start;
+        if (len >= 2)
+        {
+            boolean isNumber = true;
+            for (int i = start; i < end; i++)
+            {
+                char c = line.charAt(i);
+                if (c < '0' || c > '9')
+                {
+                    isNumber = false;
+                    break;
+                }
+            }
+            if (!isNumber)
+            {
+                String rawToken = line.substring(start, end).toLowerCase(Locale.ROOT);
+                tokensSet.add(TOKEN_CACHE.computeIfAbsent(rawToken, k -> k));
+            }
+        }
+    }
+
+    private static void extractEnchantmentMods(EmiStack stack, Set<String> modNamesSet)
     {
         if(stack.getItemStack().getItem() != Items.ENCHANTED_BOOK)
         {
             return;
         }
 
-        ItemEnchantments enchantments = (ItemEnchantments)stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+        ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
 
         if(enchantments == null)
         {
@@ -246,56 +360,8 @@ public class EmiSearchCat
             ResourceLocation eid = EmiPort.getEnchantmentRegistry().getKey(e.value());
             if(eid != null && !eid.getNamespace().equals("minecraft"))
             {
-                modNamesList.add(EmiUtil.getModName(eid.getNamespace()).toLowerCase());
-            }
-        }
-    }
-
-    private static void populateSuffixArrays(
-        List<SearchData> gatheredData,
-        Set<EmiStack> bakedStacks,
-        SuffixArray<SearchStack> names,
-        SuffixArray<SearchStack> tooltips,
-        SuffixArray<SearchStack> mods)
-    {
-        Set<String> uniqueTokens = new HashSet<>(32);
-
-        for(SearchData data : gatheredData)
-        {
-            bakedStacks.add(data.rawStack);
-
-            if(data.name != null)
-            {
-                names.add(data.searchStack, data.name);
-            }
-
-            uniqueTokens.clear();
-            for(String tooltipLine : data.tooltips)
-            {
-                if (tooltipLine == null || tooltipLine.isEmpty()) continue;
-                
-                String[] tokens = WORD_SPLITTER.split(tooltipLine);
-                for(String token : tokens)
-                {
-                    if(token.length() > 1 && uniqueTokens.add(token))
-                    {
-                        tooltips.add(data.searchStack, token);
-                    }
-                }
-            }
-
-            uniqueTokens.clear();
-            for(String modName : data.modNames)
-            {
-                if(modName != null && !modName.isEmpty() && uniqueTokens.add(modName))
-                {
-                    mods.add(data.searchStack, modName);
-                }
-            }
-
-            if(data.path != null)
-            {
-                names.add(data.searchStack, data.path);
+                String modName = MOD_NAME_CACHE.computeIfAbsent(eid.getNamespace(), k -> EmiUtil.getModName(k).toLowerCase(Locale.ROOT));
+                modNamesSet.add(modName);
             }
         }
     }
@@ -303,6 +369,7 @@ public class EmiSearchCat
     private static List<AliasData> gatherAliases()
     {
         List<AliasData> gatheredAliases = new ArrayList<>();
+        Map<String, String> translationCache = new HashMap<>(128);
 
         for(Supplier<EmiAlias> supplier : EmiData.aliases)
         {
@@ -319,18 +386,18 @@ public class EmiSearchCat
                     EmiReloadLog.warn("Untranslated alias " + key);
                 }
 
-                String text = I18n.get(key).toLowerCase();
+                String text = translationCache.computeIfAbsent(key, k -> I18n.get(k).toLowerCase(Locale.ROOT));
 
                 for(EmiIngredient ing : alias.stacks())
                 {
-                    for(EmiStack stack : ing.getEmiStacks())
+                    List<EmiStack> emiStacks = ing.getEmiStacks();
+                    for(int i = 0; i < emiStacks.size(); i++)
                     {
-                        gatheredAliases.add(new AliasData(stack, text));
+                        gatheredAliases.add(new AliasData(emiStacks.get(i), text));
                     }
                 }
             }
         }
-
 
         for(EmiAlias.Baked alias : EmiStackList.registryAliases)
         {
@@ -345,13 +412,14 @@ public class EmiSearchCat
                     continue;
                 }
 
-                String textStr = text.getString().toLowerCase();
+                String textStr = text.getString().toLowerCase(Locale.ROOT);
 
                 for(EmiIngredient ing : alias.stacks())
                 {
-                    for(EmiStack stack : ing.getEmiStacks())
+                    List<EmiStack> emiStacks = ing.getEmiStacks();
+                    for(int i = 0; i < emiStacks.size(); i++)
                     {
-                        gatheredAliases.add(new AliasData(stack, textStr));
+                        gatheredAliases.add(new AliasData(emiStacks.get(i), textStr));
                     }
                 }
             }

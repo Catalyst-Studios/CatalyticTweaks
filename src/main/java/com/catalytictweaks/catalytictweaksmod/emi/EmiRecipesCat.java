@@ -1,7 +1,5 @@
 package com.catalytictweaks.catalytictweaksmod.emi;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
 import dev.emi.emi.api.recipe.EmiRecipeManager;
@@ -23,13 +21,13 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -41,9 +39,102 @@ public class EmiRecipesCat
 {
     private static final Logger LOGGER = LoggerFactory.getLogger("CatalyticTweaks/EmiRecipesCat");
 
+    private static final Function<StrategyWrapper, Set<EmiRecipe>> NEW_KEY_SET_FUNC = k -> ConcurrentHashMap.newKeySet();
+
+    private static Constructor<?> MANAGER_CONSTRUCTOR;
+    private static Constructor<?> HASH_STRATEGY_CONSTRUCTOR;
+    private static Method SET_WORKER_METHOD;
+
+    private static Field RECIPES_FIELD;
+    private static Field WORKSTATIONS_FIELD;
+    private static Field DISABLED_FILTER_LOOKUP_FIELD;
+
+    private static Field MANAGER_CATEGORIES;
+    private static Field MANAGER_WORKSTATIONS;
+    private static Field MANAGER_RECIPES;
+    private static Field MANAGER_BY_INPUT;
+    private static Field MANAGER_BY_OUTPUT;
+    private static Field MANAGER_BY_CATEGORY;
+    private static Field MANAGER_BY_ID;
+
     static
     {
         Configurator.setLevel("CatalyticTweaks/EmiRecipesCat", Level.INFO);
+        try
+        {
+            Class<?> managerClass = Class.forName("dev.emi.emi.registry.EmiRecipes$Manager");
+            MANAGER_CONSTRUCTOR = managerClass.getDeclaredConstructor();
+            MANAGER_CONSTRUCTOR.setAccessible(true);
+
+            Class<?> hashStrategyClass = Class.forName("dev.emi.emi.registry.EmiStackList$ComparisonHashStrategy");
+            HASH_STRATEGY_CONSTRUCTOR = hashStrategyClass.getDeclaredConstructor();
+            HASH_STRATEGY_CONSTRUCTOR.setAccessible(true);
+
+            SET_WORKER_METHOD = EmiRecipes.class.getDeclaredMethod("setWorker", Class.forName("dev.emi.emi.registry.EmiRecipes$Worker"));
+            SET_WORKER_METHOD.setAccessible(true);
+
+            RECIPES_FIELD = EmiRecipes.class.getDeclaredField("recipes");
+            RECIPES_FIELD.setAccessible(true);
+
+            WORKSTATIONS_FIELD = EmiRecipes.class.getDeclaredField("workstations");
+            WORKSTATIONS_FIELD.setAccessible(true);
+
+            DISABLED_FILTER_LOOKUP_FIELD = EmiHidden.class.getDeclaredField("disabledFilterLookup");
+            DISABLED_FILTER_LOOKUP_FIELD.setAccessible(true);
+
+            MANAGER_CATEGORIES = managerClass.getDeclaredField("categories");
+            MANAGER_CATEGORIES.setAccessible(true);
+
+            MANAGER_WORKSTATIONS = managerClass.getDeclaredField("workstations");
+            MANAGER_WORKSTATIONS.setAccessible(true);
+
+            MANAGER_RECIPES = managerClass.getDeclaredField("recipes");
+            MANAGER_RECIPES.setAccessible(true);
+
+            MANAGER_BY_INPUT = managerClass.getDeclaredField("byInput");
+            MANAGER_BY_INPUT.setAccessible(true);
+
+            MANAGER_BY_OUTPUT = managerClass.getDeclaredField("byOutput");
+            MANAGER_BY_OUTPUT.setAccessible(true);
+
+            MANAGER_BY_CATEGORY = managerClass.getDeclaredField("byCategory");
+            MANAGER_BY_CATEGORY.setAccessible(true);
+
+            MANAGER_BY_ID = managerClass.getDeclaredField("byId");
+            MANAGER_BY_ID.setAccessible(true);
+        }
+        catch(Exception e)
+        {
+            LOGGER.error("Failed to initialize reflection cache for EmiRecipesCat", e);
+        }
+    }
+
+    private static class StrategyWrapper
+    {
+        final EmiStack stack;
+        final Hash.Strategy strategy;
+
+        StrategyWrapper(EmiStack stack, Hash.Strategy strategy)
+        {
+            this.stack = stack;
+            this.strategy = strategy;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return strategy.hashCode(stack);
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if(this == obj)
+                return true;
+            if(!(obj instanceof StrategyWrapper other))
+                return false;
+            return strategy.equals(this.stack, other.stack);
+        }
     }
 
     public static void bake()
@@ -103,8 +194,8 @@ public class EmiRecipesCat
 
         setupSafeLookup();
 
-        List<EmiRecipe> recipes = getDeclaredStaticField(EmiRecipes.class, "recipes");
-        Map<EmiRecipeCategory, List<EmiIngredient>> workstations = getDeclaredStaticField(EmiRecipes.class, "workstations");
+        List<EmiRecipe> recipes = (List<EmiRecipe>)RECIPES_FIELD.get(null);
+        Map<EmiRecipeCategory, List<EmiIngredient>> workstations = (Map<EmiRecipeCategory, List<EmiIngredient>>)WORKSTATIONS_FIELD.get(null);
 
         List<EmiRecipeCategory> categories = EmiRecipes.categories;
         List<Predicate<EmiRecipe>> invalidators = EmiRecipes.invalidators;
@@ -126,82 +217,123 @@ public class EmiRecipesCat
 
         Map<EmiRecipeCategory, List<EmiIngredient>> filteredWorkstations = filterWorkstations(workstations);
 
-        Map<EmiRecipeCategory, List<EmiRecipe>> byCategoryRaw = new ConcurrentHashMap<>(categories.size());
-        Map<ResourceLocation, EmiRecipe> byId = new ConcurrentHashMap<>(filteredRecipes.size());
+        Map<EmiRecipeCategory, List<EmiRecipe>> byCategoryRaw = filteredRecipes.parallelStream()
+            .collect(Collectors.groupingBy(EmiRecipe::getCategory));
 
-        filteredRecipes.parallelStream().forEach(recipe -> {
-            byCategoryRaw.computeIfAbsent(recipe.getCategory(), k -> Collections.synchronizedList(new ArrayList<>(256))).add(recipe);
-            if(recipe.getId() != null)
-            {
-                byId.put(recipe.getId(), recipe);
-            }
-        });
+        Map<ResourceLocation, EmiRecipe> byId = filteredRecipes.parallelStream()
+            .filter(recipe -> recipe.getId() != null)
+            .collect(Collectors.toMap(
+                EmiRecipe::getId,
+                recipe -> recipe, (existing, replacement) -> existing));
 
         Map<EmiRecipeCategory, List<EmiRecipe>> byCategory = sortAndFreezeCategories(byCategoryRaw);
 
-        Hash.Strategy strategy = getComparisonHashStrategy();
-        int expectedSize = Math.max(50000, filteredRecipes.size() / 2);
-        Map<EmiStack, Set<EmiRecipe>> concurrentByInput = new ConcurrentHashMap<>(expectedSize);
-        Map<EmiStack, Set<EmiRecipe>> concurrentByOutput = new ConcurrentHashMap<>(expectedSize);
+        Hash.Strategy strategy = (Hash.Strategy)HASH_STRATEGY_CONSTRUCTOR.newInstance();
 
-        byCategory.entrySet().parallelStream().forEach(entry -> {
-            for(EmiRecipe recipe : entry.getValue())
+        Map<StrategyWrapper, Set<EmiRecipe>> inputAccumulator = new ConcurrentHashMap<>(32768);
+        Map<StrategyWrapper, Set<EmiRecipe>> outputAccumulator = new ConcurrentHashMap<>(32768);
+
+        filteredRecipes.parallelStream().forEach(recipe -> {
+            List<EmiIngredient> inputs = recipe.getInputs();
+            for(int i = 0; i < inputs.size(); i++)
             {
-                recipe.getInputs().stream().flatMap(i -> i.getEmiStacks().stream()).forEach(i -> concurrentByInput.computeIfAbsent(i.copy(), b -> Sets.newConcurrentHashSet()).add(recipe));
-                recipe.getCatalysts().stream().flatMap(i -> i.getEmiStacks().stream()).forEach(i -> concurrentByInput.computeIfAbsent(i.copy(), b -> Sets.newConcurrentHashSet()).add(recipe));
-                recipe.getOutputs()
-                    .forEach(i -> concurrentByOutput.computeIfAbsent(i.copy(), b -> Sets.newConcurrentHashSet()).add(recipe));
+                List<EmiStack> stacks = inputs.get(i).getEmiStacks();
+                for(int s = 0; s < stacks.size(); s++)
+                {
+                    EmiStack stack = stacks.get(s);
+                    if(stack != null && !stack.isEmpty())
+                    {
+                        StrategyWrapper wrapper = new StrategyWrapper(stack, strategy);
+                        inputAccumulator.computeIfAbsent(wrapper, NEW_KEY_SET_FUNC).add(recipe);
+                    }
+                }
+            }
+
+            List<EmiIngredient> catalysts = recipe.getCatalysts();
+            for(int i = 0; i < catalysts.size(); i++)
+            {
+                List<EmiStack> stacks = catalysts.get(i).getEmiStacks();
+                for(int s = 0; s < stacks.size(); s++)
+                {
+                    EmiStack stack = stacks.get(s);
+                    if(stack != null && !stack.isEmpty())
+                    {
+                        StrategyWrapper wrapper = new StrategyWrapper(stack, strategy);
+                        inputAccumulator.computeIfAbsent(wrapper, NEW_KEY_SET_FUNC).add(recipe);
+                    }
+                }
+            }
+
+            List<EmiStack> outputs = recipe.getOutputs();
+            for(int i = 0; i < outputs.size(); i++)
+            {
+                EmiStack stack = outputs.get(i);
+                if(stack != null && !stack.isEmpty())
+                {
+                    StrategyWrapper wrapper = new StrategyWrapper(stack, strategy);
+                    outputAccumulator.computeIfAbsent(wrapper, NEW_KEY_SET_FUNC).add(recipe);
+                }
             }
         });
 
-        Map<EmiStack, List<EmiRecipe>> finalByInput = new Object2ObjectOpenCustomHashMap<>(concurrentByInput.size(), strategy);
-        Map<EmiStack, List<EmiRecipe>> finalByOutput = new Object2ObjectOpenCustomHashMap<>(concurrentByOutput.size(), strategy);
+        Map<EmiStack, List<EmiRecipe>> finalByInput = new Object2ObjectOpenCustomHashMap<>(inputAccumulator.size(), strategy);
+        inputAccumulator.forEach((wrapper, set) -> finalByInput.put(wrapper.stack, List.copyOf(set)));
 
-        concurrentByInput.forEach((k, v) -> finalByInput.put(k, List.copyOf(v)));
-        concurrentByOutput.forEach((k, v) -> finalByOutput.put(k, List.copyOf(v)));
+        Map<EmiStack, List<EmiRecipe>> finalByOutput = new Object2ObjectOpenCustomHashMap<>(outputAccumulator.size(), strategy);
+        outputAccumulator.forEach((wrapper, set) -> finalByOutput.put(wrapper.stack, List.copyOf(set)));
 
         populateWorkstationMap(byCategory, filteredWorkstations);
 
-        Class<?> managerClass = Class.forName("dev.emi.emi.registry.EmiRecipes$Manager");
-        Constructor<?> emptyConstructor = managerClass.getDeclaredConstructor();
-        emptyConstructor.setAccessible(true);
-        EmiRecipeManager customManager = (EmiRecipeManager)emptyConstructor.newInstance();
+        EmiRecipeManager customManager = (EmiRecipeManager)MANAGER_CONSTRUCTOR.newInstance();
 
-        setFinalField(managerClass, customManager, "categories", categories.stream().distinct().toList());
-        setFinalField(managerClass, customManager, "workstations", filteredWorkstations);
-        setFinalField(managerClass, customManager, "recipes", List.copyOf(filteredRecipes));
-        setFinalField(managerClass, customManager, "byInput", finalByInput);
-        setFinalField(managerClass, customManager, "byOutput", finalByOutput);
-        setFinalField(managerClass, customManager, "byCategory", byCategory);
-        setFinalField(managerClass, customManager, "byId", byId);
+        MANAGER_CATEGORIES.set(customManager, categories.stream().distinct().toList());
+        MANAGER_WORKSTATIONS.set(customManager, filteredWorkstations);
+        MANAGER_RECIPES.set(customManager, List.copyOf(filteredRecipes));
+        MANAGER_BY_INPUT.set(customManager, finalByInput);
+        MANAGER_BY_OUTPUT.set(customManager, finalByOutput);
+        MANAGER_BY_CATEGORY.set(customManager, byCategory);
+        MANAGER_BY_ID.set(customManager, byId);
 
         EmiRecipes.manager = customManager;
 
-        Method setWorkerMethod = EmiRecipes.class.getDeclaredMethod("setWorker", Class.forName("dev.emi.emi.registry.EmiRecipes$Worker"));
-        setWorkerMethod.setAccessible(true);
-        setWorkerMethod.invoke(null, (Object)null);
+        SET_WORKER_METHOD.invoke(null, (Object)null);
 
         LOGGER.info("Processed " + filteredRecipes.size() + " recipes in " + (System.currentTimeMillis() - start) + "ms!");
     }
 
     private static void setupSafeLookup() throws Exception
     {
-        Field lookupField = EmiHidden.class.getDeclaredField("disabledFilterLookup");
-        lookupField.setAccessible(true);
-        Map<String, Boolean> originalLookup = (Map<String, Boolean>)lookupField.get(null);
+        Map<String, Boolean> originalLookup = (Map<String, Boolean>)DISABLED_FILTER_LOOKUP_FIELD.get(null);
         ConcurrentHashMap<String, Boolean> safeLookup = new ConcurrentHashMap<>(originalLookup);
-        lookupField.set(null, safeLookup);
+        DISABLED_FILTER_LOOKUP_FIELD.set(null, safeLookup);
     }
 
     private static boolean isRecipeDisabled(EmiRecipe r)
     {
-        for(EmiIngredient i : Iterables.concat(r.getInputs(), r.getOutputs(), r.getCatalysts()))
+        for(EmiIngredient i : r.getInputs())
         {
             if(EmiHidden.isDisabled(i))
             {
-                return true;
-            }
+                return true; 
+            }  
         }
+
+        for(EmiIngredient i : r.getOutputs())
+        {
+            if(EmiHidden.isDisabled(i))
+            {
+                return true; 
+            }  
+        }
+        
+        for(EmiIngredient i : r.getCatalysts())
+        {
+            if(EmiHidden.isDisabled(i))
+            {
+                return true; 
+            }  
+        }
+        
         return false;
     }
 
@@ -246,14 +378,6 @@ public class EmiRecipesCat
         return byCategory;
     }
 
-    private static Hash.Strategy getComparisonHashStrategy() throws Exception
-    {
-        Class<?> hashStrategyClass = Class.forName("dev.emi.emi.registry.EmiStackList$ComparisonHashStrategy");
-        Constructor<?> constructor = hashStrategyClass.getDeclaredConstructor();
-        constructor.setAccessible(true);
-        return (Hash.Strategy)constructor.newInstance();
-    }
-
     private static void populateWorkstationMap(
         Map<EmiRecipeCategory, List<EmiRecipe>> byCategory,
         Map<EmiRecipeCategory, List<EmiIngredient>> filteredWorkstations)
@@ -271,23 +395,12 @@ public class EmiRecipesCat
             {
                 for(EmiStack stack : ingredient.getEmiStacks())
                 {
-                    workstationMap.computeIfAbsent(stack, s -> new ArrayList<>()).addAll(entry.getValue());
+                    if(stack != null && !stack.isEmpty())
+                    {
+                        workstationMap.computeIfAbsent(stack, s -> new ArrayList<>()).addAll(entry.getValue());
+                    }
                 }
             }
         }
-    }
-
-    private static <T> T getDeclaredStaticField(Class<?> clazz, String fieldName) throws Exception
-    {
-        Field field = clazz.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return (T)field.get(null);
-    }
-
-    private static void setFinalField(Class<?> clazz, Object instance, String fieldName, Object value) throws Exception
-    {
-        Field field = clazz.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(instance, value);
     }
 }
