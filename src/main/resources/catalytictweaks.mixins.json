@@ -3,6 +3,7 @@
   "minVersion": "0.8.4",
   "package": "com.catalytictweaks.catalytictweaksmod.mixin",
   "refmap": "mixins.catalytictweaks.refmap.json",
+  "plugin": "com.catalytictweaks.catalytictweaksmod.mixin.MixinPlugin",
   "mixins": [
     "mmr.accessors.RecipeCheckerAccessor",
     "mmr.accessors.MachineProcessorCoreAccessor",
@@ -43,6 +44,8 @@
     "jei.Entry",
     "emi.Runtime",
     "emi.ReloadWorkerMixin",
+    "emi.MinecraftMixin",
+    "emi.EmiApiMixin",
     "pipez.PipezMixin",
     "sfml.ProgramEditorColorsMixin",
     "kjs.MixinKubeJSCommands",

@@ -167,6 +167,11 @@ dependencies
     compileOnly localRuntime("curse.maven:mystical-agriculture-246640:8344249")
     localRuntime("curse.maven:cucumber-272335:8035802")
 
+    compileOnly localRuntime("curse.maven:ftb-quests-forge-289412:8648333")
+    compileOnly localRuntime("curse.maven:ftb-library-forge-404465:8569579")
+    compileOnly localRuntime("curse.maven:ftb-teams-forge-404468:7878281")
+    compileOnly localRuntime("curse.maven:architectury-api-419699:8492726")
+
     //For devving
     localRuntime("curse.maven:spark-361579:6225208") //Profilers
     localRuntime("curse.maven:jade-324717:7428884") //Status of machines
