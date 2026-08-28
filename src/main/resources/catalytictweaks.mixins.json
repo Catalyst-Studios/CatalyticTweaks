@@ -53,7 +53,10 @@
     "kjs.KubeJSWebMixin",
     "au.CancelEarlyAUMixin",
     "au.TriggerLateAUMixin",
-    "ma.CruxRecipeMixin"
+    "ma.CruxRecipeMixin",
+    "ftbq.QuestPanelMixin",
+    "ftbq.ChapterPanelMixin",
+    "ftbq.ChapterButtonMixin"
   ],
   "client": [],
   "server": [],
