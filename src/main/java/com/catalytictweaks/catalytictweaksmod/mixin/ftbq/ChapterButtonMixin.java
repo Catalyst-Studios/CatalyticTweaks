@@ -1,7 +1,6 @@
 package com.catalytictweaks.catalytictweaksmod.mixin.ftbq;
 
 import dev.ftb.mods.ftblibrary.icon.Icon;
-import dev.ftb.mods.ftblibrary.icon.ImageIcon;
 import dev.ftb.mods.ftblibrary.ui.Button;
 import dev.ftb.mods.ftblibrary.ui.Panel;
 import dev.ftb.mods.ftblibrary.ui.Theme;
@@ -26,6 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.catalytictweaks.catalytictweaksmod.ftbq.CustomThemeProperties;
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
 
 @Pseudo
 @Mixin(value = ChapterPanel.ChapterButton.class, remap = false)
@@ -43,6 +43,7 @@ public abstract class ChapterButtonMixin extends Button
     @Unique
     private static final Map<ResourceLocation, int[]> DIMENSION_CACHE = new HashMap<>();
 
+    @SuppressWarnings("null")
     @Unique
     private static int[] getTextureDimensions(ResourceLocation texture)
     {
@@ -64,25 +65,20 @@ public abstract class ChapterButtonMixin extends Button
     {
         Icon buttonBg = CustomThemeProperties.CHAPTER_BUTTON_BACKGROUND.get(this.chapter);
 
-        if (buttonBg != null && !buttonBg.isEmpty())
+        if(buttonBg != null && !buttonBg.isEmpty())
         {
             int offsetX = CustomThemeProperties.CHAPTER_BUTTON_OFFSET_X.get(this.chapter);
             int offsetY = CustomThemeProperties.CHAPTER_BUTTON_OFFSET_Y.get(this.chapter);
 
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+
             graphics.enableScissor(x, y, x + w, y + h);
 
-            if(buttonBg instanceof ImageIcon imgIcon)
-            {
-                int[] dimensions = getTextureDimensions(imgIcon.texture);
-                int bannerWidth = dimensions[0];
-                int bannerHeight = dimensions[1];
+            int bannerWidth = 1024;
+            int bannerHeight = 768;
 
-                Icon.getIcon(imgIcon.texture).draw(graphics, x + offsetX, y + offsetY, bannerWidth, bannerHeight);
-            }
-            else
-            {
-                buttonBg.draw(graphics, x + offsetX, y + offsetY, w, h);
-            }
+            buttonBg.draw(graphics, x + offsetX, y + offsetY, bannerWidth, bannerHeight);
 
             graphics.disableScissor();
         }
@@ -97,25 +93,20 @@ public abstract class ChapterButtonMixin extends Button
     {
         Icon buttonBg = CustomThemeProperties.CHAPTER_BUTTON_BACKGROUND.get(this.chapter);
 
-        if (buttonBg != null && !buttonBg.isEmpty())
+        if(buttonBg != null && !buttonBg.isEmpty())
         {
             int offsetX = CustomThemeProperties.CHAPTER_BUTTON_OFFSET_X.get(this.chapter);
             int offsetY = CustomThemeProperties.CHAPTER_BUTTON_OFFSET_Y.get(this.chapter);
 
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+
             graphics.enableScissor(x, y, x + w, y + h);
 
-            if(buttonBg instanceof ImageIcon imgIcon)
-            {
-                int[] dimensions = getTextureDimensions(imgIcon.texture);
-                int bannerWidth = dimensions[0];
-                int bannerHeight = dimensions[1];
+            int bannerWidth = 1024;
+            int bannerHeight = 768;
 
-                Icon.getIcon(imgIcon.texture).draw(graphics, x + offsetX, y + offsetY, bannerWidth, bannerHeight);
-            }
-            else
-            {
-                buttonBg.draw(graphics, x + offsetX, y + offsetY, w, h);
-            }
+            buttonBg.draw(graphics, x + offsetX, y + offsetY, bannerWidth, bannerHeight);
 
             graphics.disableScissor();
         }
