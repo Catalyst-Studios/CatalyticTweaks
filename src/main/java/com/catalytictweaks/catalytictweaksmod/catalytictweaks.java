@@ -1,6 +1,8 @@
 package com.catalytictweaks.catalytictweaksmod;
 
 import com.catalytictweaks.catalytictweaksmod.network.HideStructurePayload;
+import com.catalytictweaks.catalytictweaksmod.network.SyncMachinesBulkHandler;
+import com.catalytictweaks.catalytictweaksmod.network.SyncMachinesBulkPayload;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -34,5 +36,10 @@ public class catalytictweaks
             HideStructurePayload.TYPE,
             HideStructurePayload.STREAM_CODEC,
             (payload, context) -> HideStructurePayload.handleClient(payload, context));
+
+        registrar.playToClient(
+            SyncMachinesBulkPayload.TYPE, 
+            SyncMachinesBulkPayload.STREAM_CODEC, 
+            SyncMachinesBulkHandler::handleClient);
     }
 }

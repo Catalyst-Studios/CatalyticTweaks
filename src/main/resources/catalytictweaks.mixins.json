@@ -7,7 +7,16 @@
   "mixins": [
     "mmr.accessors.RecipeCheckerAccessor",
     "mmr.accessors.MachineProcessorCoreAccessor",
+    "mmr.accessors.AbstractHandlerAccessor",
+    "mmr.accessors.AbstractSlotAccessor",
     "mmr.ItemHandlerMixin",
+    "mmr.ItemSlotMixin",
+    "mmr.BlockMachineComponentMixin",
+    "mmr.TileItemBusMixin",
+    "mmr.MultiblockSceneMixin",
+    "mmr.MultiblockRecipeMixin",
+    "mmr.ModularMachineryRebornMixin",
+    "mmr.StructurePlacerWidgetMixin",
     "mmr.StopRenderingCTMC",
     "mmr.StopRenderingCCL",
     "mmr.EnergyHatchMixin",
@@ -56,9 +65,12 @@
     "ma.CruxRecipeMixin",
     "ftbq.QuestPanelMixin",
     "ftbq.ChapterPanelMixin",
-    "ftbq.ChapterButtonMixin"
+    "ftbq.ChapterButtonMixin",
+    "ftbq.QuestShapeMixin"
   ],
-  "client": [],
+  "client": [
+      "mmr.screen.SceneMixin"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 1

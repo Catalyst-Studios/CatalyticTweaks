@@ -9,10 +9,15 @@ import java.util.Set;
 import com.catalytictweaks.catalytictweaksmod.network.HideStructurePayload.MachineHidingConfig;
 import com.catalytictweaks.catalytictweaksmod.sfml.Color;
 
+import es.degrassi.mmreborn.common.block.prop.ItemBusSize;
+import es.degrassi.mmreborn.data.MMRTags;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.config.ModConfigEvent;
@@ -64,6 +69,42 @@ public class Config
                                                                                                        List.of("minecraft:name_tag"),
                                                                                                        () -> "", obj -> obj instanceof String);
     public static final Set<Item> LOOSE_MATCH_SET = new HashSet<>();
+    private static final int max_size = 8192;
+    public static final ModConfigSpec.IntValue TINY_BUS_CAPACITY = MMR_BUILDER
+            .comment("Item capacity per slot for the Tiny Item Bus")
+            .defineInRange("BUS_CAPACITIES.tinyBusCapacity", 16, 1, max_size);
+
+    public static final ModConfigSpec.IntValue SMALL_BUS_CAPACITY = MMR_BUILDER
+            .comment("Item capacity per slot for the Small Item Bus")
+            .defineInRange("BUS_CAPACITIES.smallBusCapacity", 32, 1, max_size);
+
+    public static final ModConfigSpec.IntValue NORMAL_BUS_CAPACITY = MMR_BUILDER
+            .comment("Item capacity per slot for the Normal Item Bus")
+            .defineInRange("BUS_CAPACITIES.normalBusCapacity", 64, 1, max_size);
+
+    public static final ModConfigSpec.IntValue REINFORCED_BUS_CAPACITY = MMR_BUILDER
+            .comment("Item capacity per slot for the Reinforced Item Bus")
+            .defineInRange("BUS_CAPACITIES.reinforcedBusCapacity", 128, 1, max_size);
+
+    public static final ModConfigSpec.IntValue BIG_BUS_CAPACITY = MMR_BUILDER
+            .comment("Item capacity per slot for the Big Item Bus")
+            .defineInRange("BUS_CAPACITIES.bigBusCapacity", 256, 1, max_size);
+
+    public static final ModConfigSpec.IntValue HUGE_BUS_CAPACITY = MMR_BUILDER
+            .comment("Item capacity per slot for the Huge Item Bus")
+            .defineInRange("BUS_CAPACITIES.hugeBusCapacity", 512, 1, max_size);
+
+    public static final ModConfigSpec.IntValue LUDICROUS_BUS_CAPACITY = MMR_BUILDER
+            .comment("Item capacity per slot for the Ludicrous Item Bus")
+            .defineInRange("BUS_CAPACITIES.ludicrousBusCapacity", 1024, 1, max_size);
+
+    public static int tinyBusCapacity = 16;
+    public static int smallBusCapacity = 32;
+    public static int normalBusCapacity = 64;
+    public static int reinforcedBusCapacity = 128;
+    public static int bigBusCapacity = 256;
+    public static int hugeBusCapacity = 512;
+    public static int ludicrousBusCapacity = 1024;
 
     private static final ModConfigSpec.ConfigValue<List<? extends List<?>>> STRUCTURE_HIDING_CONFIG = MMR_BUILDER
     .comment(
@@ -91,6 +132,37 @@ public class Config
     );
 
     public static final Map<ResourceLocation, MachineHidingConfig> HIDING_CONFIG_MAP = new HashMap<>();
+
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> HATCH_OR_BUS_TAGS_CONFIG = MMR_BUILDER
+        .comment(
+            "Block tags treated as 'hatch/bus' by the structure auto-builder.",
+            "When a structure position accepts several block variants, the auto-builder prefers a non-hatch/bus",
+            "one (e.g. casing) and leaves hatches/buses for the player to place manually, UNLESS the position",
+            "only accepts hatches/buses, in which case it grabs the first one available in the inventory.",
+            "Defaults: modular_machinery_reborn:hatches, modular_machinery_reborn:itembus",
+            "Add a tag id (e.g. 'mekanism:machine_hatches') to include it.",
+            "Prefix with '-' to remove one of the defaults (e.g. '-modular_machinery_reborn:itembus')."
+        )
+        .defineList("RECIPES.hatchOrBusTags",
+            List.of(),
+            () -> "", obj -> obj instanceof String);
+
+    private static final Set<TagKey<Block>> DEFAULT_HATCH_OR_BUS_TAGS = Set.of(
+        MMRTags.Blocks.HATCHES,
+        MMRTags.Blocks.ITEM
+    );
+
+    public static final Set<TagKey<Block>> HATCH_OR_BUS_TAGS = new HashSet<>(DEFAULT_HATCH_OR_BUS_TAGS);
+
+    public static boolean isHatchOrBus(BlockState state)
+    {
+        for(TagKey<Block> tag : HATCH_OR_BUS_TAGS)
+        {
+            if(state.is(tag))
+                return true;
+        }
+        return false;
+    }
 
     // SFML
     private static final Map<Integer, ModConfigSpec.ConfigValue<String>> SFM_COLOR_CONFIGS = new HashMap<>();
@@ -275,6 +347,14 @@ public class Config
         }
         else if(eventSpec == MMR_SPEC)
         {
+            tinyBusCapacity = TINY_BUS_CAPACITY.get();
+            smallBusCapacity = SMALL_BUS_CAPACITY.get();
+            normalBusCapacity = NORMAL_BUS_CAPACITY.get();
+            reinforcedBusCapacity = REINFORCED_BUS_CAPACITY.get();
+            bigBusCapacity = BIG_BUS_CAPACITY.get();
+            hugeBusCapacity = HUGE_BUS_CAPACITY.get();
+            ludicrousBusCapacity = LUDICROUS_BUS_CAPACITY.get();
+
             shouldmmrdoonerecipe = MMR_ONE_RECIPE.get();
             LOOSE_MATCH_SET.clear();
             for(String id : LOOSE_MATCH_ITEMS.get())
@@ -324,6 +404,30 @@ public class Config
                 }
                 HIDING_CONFIG_MAP.put(rl, new MachineHidingConfig(rowSet, blockSet));
             }
+
+            HATCH_OR_BUS_TAGS.clear();
+            HATCH_OR_BUS_TAGS.addAll(DEFAULT_HATCH_OR_BUS_TAGS);
+            for(String entry : HATCH_OR_BUS_TAGS_CONFIG.get())
+            {
+                if(entry == null || entry.isBlank())
+                    continue;
+
+                boolean remove = entry.startsWith("-");
+                String idStr = (remove ? entry.substring(1) : entry).trim();
+
+                ResourceLocation rl = ResourceLocation.tryParse(idStr);
+                if(rl == null)
+                {
+                    catalytictweaks.LOGGER.warn("Invalid tag id in hatchOrBusTags config: {}", entry);
+                    continue;
+                }
+
+                TagKey<Block> tag = BlockTags.create(rl);
+                if(remove)
+                    HATCH_OR_BUS_TAGS.remove(tag);
+                else
+                    HATCH_OR_BUS_TAGS.add(tag);
+            }
         }
         else if(eventSpec == SFM_SPEC)
         {
@@ -341,5 +445,20 @@ public class Config
             COMPACT = compact.get();
             AU_FIRST = au_first.get();
         }
+    }
+
+    public static int getBusCapacity(ItemBusSize size)
+    {
+        if(size == null) return 64;
+        return switch(size)
+        {
+            case TINY -> tinyBusCapacity;
+            case SMALL -> smallBusCapacity;
+            case NORMAL -> normalBusCapacity;
+            case REINFORCED -> reinforcedBusCapacity;
+            case BIG -> bigBusCapacity;
+            case HUGE -> hugeBusCapacity;
+            case LUDICROUS -> ludicrousBusCapacity;
+        };
     }
 }

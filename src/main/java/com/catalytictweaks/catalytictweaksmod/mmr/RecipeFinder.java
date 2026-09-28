@@ -29,11 +29,7 @@ public class RecipeFinder
 
     private static Map<ResourceLocation, List<RecipeHolder<MachineRecipe>>> recipe_cache = null;
     private static RecipeManager last_recipe_manager = null;
-
-    /**
-     * Interface to allow as bridge, so you can use the debugger to
-     * change and access the mixin status as clear as possible
-     */
+    private static final int IDLE_RECIPE_COOLDOWN_TICKS = 100;
     public interface Context
     {
         MachineControllerEntity getTile();
@@ -95,7 +91,7 @@ public class RecipeFinder
         }
 
         int cooldown = ctx.getRecipeCheckCooldown();
-        boolean shouldCheck = immediately;
+        boolean shouldCheck = immediately || ctx.isComponentChanged();
 
         if(!shouldCheck)
         {
@@ -193,6 +189,7 @@ public class RecipeFinder
             }
 
             ctx.setComponentChanged(false);
+            ctx.setRecipeCheckCooldown(bestMatch == null ? IDLE_RECIPE_COOLDOWN_TICKS : ctx.getBaseCooldown());
             return Optional.ofNullable(bestMatch);
         }
 

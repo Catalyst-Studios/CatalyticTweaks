@@ -148,7 +148,7 @@ dependencies
     compileOnly localRuntime("curse.maven:jei-238222:8555356")
 
     //Pipez
-    compileOnly localRuntime("curse.maven:pipez-443900:5609056")
+    compileOnly localRuntime("curse.maven:pipez-443900:8351631")
 
     //Mekanism (needed for mmr)
     compileOnly localRuntime("curse.maven:mekanism-268560:7132168") //Tanks

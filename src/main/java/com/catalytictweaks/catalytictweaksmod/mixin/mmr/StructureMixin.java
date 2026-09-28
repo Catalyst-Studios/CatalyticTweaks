@@ -1,5 +1,6 @@
 package com.catalytictweaks.catalytictweaksmod.mixin.mmr;
 
+import com.catalytictweaks.catalytictweaksmod.Config;
 import es.degrassi.mmreborn.api.BlockIngredient;
 import es.degrassi.mmreborn.api.PartialBlockState;
 import es.degrassi.mmreborn.api.Structure;
@@ -11,15 +12,19 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.Rotation;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -91,11 +96,13 @@ public abstract class StructureMixin
             return;
 
         Direction facing = controllerState.getValue(BlockStateProperties.HORIZONTAL_FACING);
-        Map<BlockPos, BlockIngredient> blocks = withModifiers ? structure.getBlocks(facing)
-                                                              : structure.getBlocksFiltered(facing);
 
-        List<Map.Entry<BlockPos, BlockIngredient>> sortedBlocks = new java.util.ArrayList<>(blocks.entrySet());
-        sortedBlocks.sort(java.util.Comparator.comparingInt(e -> e.getKey().getY()));
+        Map<BlockPos, BlockIngredient> blocks = withModifiers
+                                                ? structure.getBlocks(facing)
+                                                : structure.getBlocksFiltered(facing);
+                                        
+        List<Map.Entry<BlockPos, BlockIngredient>> sortedBlocks = new ArrayList<>(blocks.entrySet());
+        sortedBlocks.sort(Comparator.comparingInt(e -> e.getKey().getY()));
 
         BlockPos.MutableBlockPos worldPos = new BlockPos.MutableBlockPos();
 
@@ -107,50 +114,78 @@ public abstract class StructureMixin
             if(ingredient == null)
                 continue;
 
-            worldPos.set(relativePos.getX() + controllerPos.getX(), relativePos.getY() + controllerPos.getY(),
-                relativePos.getZ() + controllerPos.getZ());
+            if(ingredient.equals(BlockIngredient.ANY))
+                continue;
+
+            worldPos.set(relativePos.getX() + controllerPos.getX(),
+                 relativePos.getY() + controllerPos.getY(),
+                 relativePos.getZ() + controllerPos.getZ());
 
             if(worldPos.equals(controllerPos))
+                continue;
+
+            if(!isBuildable(level.getBlockState(worldPos)))
+                continue;
+
+            if(ingredient.equals(BlockIngredient.AIR))
                 continue;
 
             List<PartialBlockState> states = ingredient.getAll();
             if(states == null || states.isEmpty())
                 continue;
 
-            PartialBlockState defaultState = states.get(0);
-            if(defaultState == null || defaultState.getBlockState() == null)
-                continue;
-
-            Rotation rotation = getRotation(facing);
-
-            if(player != null && !isCreative)
+            List<PartialBlockState> nonHatchStates = new ArrayList<>();
+            List<PartialBlockState> hatchStates = new ArrayList<>();
+            for(PartialBlockState state : states)
             {
-                Inventory inventory = player.getInventory();
-                ItemStack requiredStack = new ItemStack(defaultState.getBlockState().getBlock());
-
-                int slot = inventory.findSlotMatchingItem(requiredStack);
-                if(slot != -1)
-                {
-                    inventory.removeItem(slot, 1);
-                }
-                else
-                {
+                if(state == null || state.getBlockState() == null)
                     continue;
-                }
+                if(Config.isHatchOrBus(state.getBlockState()))
+                    hatchStates.add(state);
+                else
+                    nonHatchStates.add(state);
             }
 
-            setBlockRotated(level, worldPos, defaultState, rotation);
+            PartialBlockState chosenState = selectState(player, isCreative, nonHatchStates);
+            if(chosenState == null)
+                chosenState = selectState(player, isCreative, hatchStates);
+
+            if(chosenState == null)
+                continue;
+
+            setBlock(level, worldPos, chosenState);
         }
     }
 
-    private static Rotation getRotation(Direction facing)
+    @Unique
+    private static PartialBlockState selectState(ServerPlayer player, boolean isCreative, List<PartialBlockState> candidates)
     {
-        return switch(facing)
+        if(candidates.isEmpty())
+            return null;
+
+        if(isCreative)
+            return candidates.get(0);
+
+        if(player == null)
+            return null;
+
+        Inventory inventory = player.getInventory();
+        for(PartialBlockState candidate : candidates)
         {
-            case SOUTH -> Rotation.CLOCKWISE_180;
-            case WEST -> Rotation.COUNTERCLOCKWISE_90;
-            case EAST -> Rotation.CLOCKWISE_90;
-            default -> Rotation.NONE;
-        };
+            ItemStack requiredStack = new ItemStack(candidate.getBlockState().getBlock());
+            int slot = inventory.findSlotMatchingItem(requiredStack);
+            if(slot != -1)
+            {
+                inventory.removeItem(slot, 1);
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    @Unique
+    private static boolean isBuildable(BlockState state)
+    {
+        return state.isAir() || state.getBlock() instanceof LiquidBlock;
     }
 }
