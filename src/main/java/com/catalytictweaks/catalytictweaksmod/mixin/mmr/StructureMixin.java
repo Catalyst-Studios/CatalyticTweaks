@@ -27,7 +27,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import org.spongepowered.asm.mixin.Pseudo;
 
+@Pseudo
 @SuppressWarnings("null")
 @Mixin(value = Structure.class, remap = false)
 public abstract class StructureMixin

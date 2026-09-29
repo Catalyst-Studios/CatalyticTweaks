@@ -99,7 +99,7 @@ public class RecipeFinder
             ctx.setRecipeCheckCooldown(cooldown);
         }
 
-        if(shouldCheck)
+        if(shouldCheck) 
         {
             ctx.setRecipeCheckCooldown(ctx.getBaseCooldown());
 
@@ -113,10 +113,6 @@ public class RecipeFinder
             while(iterator.hasNext())
             {
                 RecipeChecker<MachineRecipe> checker = iterator.next();
-                if(!ctx.isComponentChanged() && checker.isInventoryRequirementsOnly() && !immediately)
-                {
-                    continue;
-                }
 
                 MachineRecipe recipe = checker.getRecipe().value();
                 boolean logicCheck = true;

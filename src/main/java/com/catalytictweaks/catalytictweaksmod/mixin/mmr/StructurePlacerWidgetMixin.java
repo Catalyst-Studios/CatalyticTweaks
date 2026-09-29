@@ -28,7 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
+import org.spongepowered.asm.mixin.Pseudo;
 
+@Pseudo
 @SuppressWarnings("null")
 @Mixin(value = StructurePlacerWidget.class, remap = false)
 public abstract class StructurePlacerWidgetMixin

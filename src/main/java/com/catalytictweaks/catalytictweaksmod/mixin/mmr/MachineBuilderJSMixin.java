@@ -11,7 +11,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.catalytictweaks.catalytictweaksmod.mmr.ClientStructureHider;
 import com.catalytictweaks.catalytictweaksmod.mmr.DynamicMachineBridge;
+import org.spongepowered.asm.mixin.Pseudo;
 
+@Pseudo
 @Mixin(value = MachineBuilderJS.class, remap = false)
 public class MachineBuilderJSMixin
 {

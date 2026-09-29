@@ -11,7 +11,9 @@ import org.spongepowered.asm.mixin.Unique;
 import com.catalytictweaks.catalytictweaksmod.mmr.DynamicMachineBridge;
 import com.catalytictweaks.catalytictweaksmod.mmr.Name;
 import java.util.Optional;
+import org.spongepowered.asm.mixin.Pseudo;
 
+@Pseudo
 @Mixin(value = DynamicMachine.class, remap = false)
 public class DynamicMachineMixin implements DynamicMachineBridge
 {

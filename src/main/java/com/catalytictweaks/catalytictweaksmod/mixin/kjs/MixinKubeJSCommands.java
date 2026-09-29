@@ -1,6 +1,7 @@
 package com.catalytictweaks.catalytictweaksmod.mixin.kjs;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -15,6 +16,7 @@ import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 
+@Pseudo
 @Mixin(KubeJSCommands.class)
 public abstract class MixinKubeJSCommands
 {

@@ -8,7 +8,9 @@ import es.degrassi.mmreborn.common.entity.MachineControllerEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
+import org.spongepowered.asm.mixin.Pseudo;
 
+@Pseudo
 @Mixin(targets = "es.degrassi.mmreborn.api.PartialBlockState$2", remap = false)
 public class MachinePartialStateMixin
 {

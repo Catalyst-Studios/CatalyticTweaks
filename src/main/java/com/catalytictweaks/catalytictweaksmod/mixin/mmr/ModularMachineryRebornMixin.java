@@ -14,7 +14,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.spongepowered.asm.mixin.Pseudo;
 
+@Pseudo
 @Mixin(ModularMachineryReborn.class)
 public class ModularMachineryRebornMixin
 {

@@ -6,7 +6,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
 import com.catalytictweaks.catalytictweaksmod.mmr.MMRRecipeHelper;
+import org.spongepowered.asm.mixin.Pseudo;
 
+@Pseudo
 @Mixin(value = MMRJeiPlugin.class, remap = false)
 public abstract class MMRJeiPluginMixin
 {

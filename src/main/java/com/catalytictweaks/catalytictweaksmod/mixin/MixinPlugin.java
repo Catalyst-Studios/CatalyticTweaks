@@ -12,12 +12,20 @@ public class MixinPlugin implements IMixinConfigPlugin
 {
 
     private boolean ftbq;
+    private boolean emi;
+    private boolean mmr;
 
     @Override
     public void onLoad(String mixinPackage)
     {
         ftbq = FMLLoader.getLoadingModList().getMods().stream()
                 .anyMatch(modInfo -> modInfo.getModId().equals("ftbquests"));
+
+        emi = FMLLoader.getLoadingModList().getMods().stream()
+                .anyMatch(modInfo -> modInfo.getModId().equals("emi"));
+
+        mmr = FMLLoader.getLoadingModList().getMods().stream()
+                .anyMatch(modInfo -> modInfo.getModId().equals("modular_machinery_reborn"));
     }
 
     @Override
@@ -31,13 +39,19 @@ public class MixinPlugin implements IMixinConfigPlugin
     {
         if(mixinClassName.endsWith("EmiApiMixin"))
         {
-            return ftbq;
+            return ftbq && emi;
         }
 
-        if(mixinClassName.endsWith("MinecraftMixin") && mixinClassName.contains("mixin.emi"))
+        if(mixinClassName.endsWith("MinecraftMixin") && mixinClassName.contains("catalytictweaksmod.mixin.emi"))
         {
-            return ftbq;
+            return ftbq && emi;
         }
+
+        if(mixinClassName.endsWith("MinecraftMixin") && mixinClassName.contains("catalytictweaksmod.mixin.mmr.hide_blocks"))
+        {
+            return mmr;
+        }
+
         return true;
     }
 

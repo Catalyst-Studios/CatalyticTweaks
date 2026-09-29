@@ -20,7 +20,9 @@ import net.minecraft.world.level.block.state.properties.Property;
 
 import java.util.List;
 import java.util.Locale;
+import org.spongepowered.asm.mixin.Pseudo;
 
+@Pseudo
 @SuppressWarnings("null")
 @Mixin(value = PartialBlockState.class, remap = false)
 public abstract class PartialBlockStateMixin

@@ -7,6 +7,9 @@ import org.spongepowered.asm.mixin.Overwrite;
 
 import com.catalytictweaks.catalytictweaksmod.mmr.MMRRecipeHelper;
 
+import org.spongepowered.asm.mixin.Pseudo;
+
+@Pseudo
 @Mixin(value = MMREmiPlugin.class, remap = false)
 public class MMREmiPluginMixin
 {

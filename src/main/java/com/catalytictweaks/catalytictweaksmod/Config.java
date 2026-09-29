@@ -9,8 +9,6 @@ import java.util.Set;
 import com.catalytictweaks.catalytictweaksmod.network.HideStructurePayload.MachineHidingConfig;
 import com.catalytictweaks.catalytictweaksmod.sfml.Color;
 
-import es.degrassi.mmreborn.common.block.prop.ItemBusSize;
-import es.degrassi.mmreborn.data.MMRTags;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
@@ -63,11 +61,11 @@ public class Config
                                                                          .define("RECIPES.shouldDoOneRecipe", true);
 
     private static final ModConfigSpec.ConfigValue<List<? extends String>> LOOSE_MATCH_ITEMS = MMR_BUILDER
-                                                                                                   .comment("Items that should ignore components/NBT when matching machine recipes (e.g., ['mymod:id', 'anothermod:test'])")
-                                                                                                   .defineList(
-                                                                                                       "RECIPES.looseMatchItems",
-                                                                                                       List.of("minecraft:name_tag"),
-                                                                                                       () -> "", obj -> obj instanceof String);
+                                                                                                 .comment("Items that should ignore components/NBT when matching machine recipes (e.g., ['mymod:id', 'anothermod:test'])")
+                                                                                                 .defineList(
+                                                                                                     "RECIPES.looseMatchItems",
+                                                                                                     List.of("minecraft:name_tag"),
+                                                                                                     () -> "", obj -> obj instanceof String);
     public static final Set<Item> LOOSE_MATCH_SET = new HashSet<>();
     private static final int max_size = 8192;
     public static final ModConfigSpec.IntValue TINY_BUS_CAPACITY = MMR_BUILDER
@@ -148,8 +146,8 @@ public class Config
             () -> "", obj -> obj instanceof String);
 
     private static final Set<TagKey<Block>> DEFAULT_HATCH_OR_BUS_TAGS = Set.of(
-        MMRTags.Blocks.HATCHES,
-        MMRTags.Blocks.ITEM
+        BlockTags.create(ResourceLocation.fromNamespaceAndPath("modular_machinery_reborn", "hatches")),
+        BlockTags.create(ResourceLocation.fromNamespaceAndPath("modular_machinery_reborn", "itembus"))
     );
 
     public static final Set<TagKey<Block>> HATCH_OR_BUS_TAGS = new HashSet<>(DEFAULT_HATCH_OR_BUS_TAGS);
@@ -291,11 +289,11 @@ public class Config
     private static final ModConfigSpec.BooleanValue with_commas = KJS_BUILDER.comment("Should the copy text message has ' or not").define("KJS.with_commas", true);
     private static final ModConfigSpec.BooleanValue compact = KJS_BUILDER.comment("Should the copy text message for nbt be compacted").define("KJS.compact", false);
     public static final ModConfigSpec.ConfigValue<List<? extends String>> SILENCED_NAMESPACES = KJS_BUILDER
-                                                                                                    .comment("List of namespaces where KubeJS automatic lang generation should be disabled.",
-                                                                                                        "This allows your custom .json lang files to handle translations natively.")
-                                                                                                    .defineList("KJS.silenced_namespaces",
-                                                                                                        List.of("catalyst", "catalystcore", catalytictweaks.MODID, "catalystgraves", "catalystgrave"),
-                                                                                                        () -> "", obj -> obj instanceof String);
+                                                                                                  .comment("List of namespaces where KubeJS automatic lang generation should be disabled.",
+                                                                                                      "This allows your custom .json lang files to handle translations natively.")
+                                                                                                  .defineList("KJS.silenced_namespaces",
+                                                                                                      List.of("catalyst", "catalystcore", catalytictweaks.MODID, "catalystgraves", "catalystgrave"),
+                                                                                                      () -> "", obj -> obj instanceof String);
     private static final ModConfigSpec.BooleanValue au_first = KJS_BUILDER.comment("Should AU be loaded first or later than KubeJS").define("KJS.au_first", true);
 
     public static final ModConfigSpec PIPEZ_SPEC = PIPEZ_BUILDER.build();
@@ -447,18 +445,20 @@ public class Config
         }
     }
 
-    public static int getBusCapacity(ItemBusSize size)
+    public static int getBusCapacity(Object size)
     {
         if(size == null) return 64;
-        return switch(size)
+        String name = (size instanceof Enum<?> e) ? e.name() : size.toString();
+        return switch(name)
         {
-            case TINY -> tinyBusCapacity;
-            case SMALL -> smallBusCapacity;
-            case NORMAL -> normalBusCapacity;
-            case REINFORCED -> reinforcedBusCapacity;
-            case BIG -> bigBusCapacity;
-            case HUGE -> hugeBusCapacity;
-            case LUDICROUS -> ludicrousBusCapacity;
+            case "TINY" -> tinyBusCapacity;
+            case "SMALL" -> smallBusCapacity;
+            case "NORMAL" -> normalBusCapacity;
+            case "REINFORCED" -> reinforcedBusCapacity;
+            case "BIG" -> bigBusCapacity;
+            case "HUGE" -> hugeBusCapacity;
+            case "LUDICROUS" -> ludicrousBusCapacity;
+            default -> 64;
         };
     }
 }
