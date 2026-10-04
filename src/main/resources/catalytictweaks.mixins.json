@@ -48,6 +48,7 @@
     "mmr.hide_blocks.BlockRenderDispatcherMixin",
     "mmr.hide_blocks.ModelBlockRendererMixin",
     "mmr.hide_blocks.MinecraftMixin",
+    "mmr.RequirementEnergyPerTickMixin",
     "create.MixinBigOutlines",
     "jei.Runtime",
     "jei.Entry",
