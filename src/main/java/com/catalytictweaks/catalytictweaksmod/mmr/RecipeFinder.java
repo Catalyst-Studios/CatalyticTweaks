@@ -99,7 +99,7 @@ public class RecipeFinder
             ctx.setRecipeCheckCooldown(cooldown);
         }
 
-        if(shouldCheck) 
+        if(shouldCheck)
         {
             ctx.setRecipeCheckCooldown(ctx.getBaseCooldown());
 
@@ -184,7 +184,6 @@ public class RecipeFinder
                 }
             }
 
-            ctx.setComponentChanged(false);
             ctx.setRecipeCheckCooldown(bestMatch == null ? IDLE_RECIPE_COOLDOWN_TICKS : ctx.getBaseCooldown());
             return Optional.ofNullable(bestMatch);
         }

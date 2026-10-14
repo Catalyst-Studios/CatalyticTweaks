@@ -11,8 +11,10 @@ import java.util.concurrent.ExecutionException;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -61,6 +63,50 @@ public abstract class ComponentManagerMixin implements IComponentManager
     protected LoadingCache<RequirementType<?, ?, ?>, List<RecipeModifier<?, ?, ?>>> fMV;
     @Shadow
     public abstract <C extends MachineComponent<T>, T> Optional<C> getComponent(ComponentType<T> type, IOType mode);
+
+    @Unique
+    private List<MachineComponent<?>> cachedComponentsList = null;
+
+    @Overwrite
+    public final List<MachineComponent<?>> getFoundComponentsList()
+    {
+        if(this.cachedComponentsList != null)
+        {
+            return this.cachedComponentsList;
+        }
+
+        List<MachineComponent<?>> list = new ArrayList<>(this.fC.asMap().size());
+        for(Optional<MachineComponent<?>> opt : this.fC.asMap().values())
+        {
+            if(opt == null) continue;
+            if(!opt.isPresent()) continue;
+            list.add(opt.get());
+        }
+        this.cachedComponentsList = list;
+
+        return this.cachedComponentsList;
+    }
+
+    @Overwrite
+    public List<ModifierReplacement> getFoundModifiersList()
+    {
+        List<ModifierReplacement> list = new ArrayList<>();
+        for(List<ModifierReplacement> mods : this.fM.asMap().values())
+        {
+            if(mods == null)
+            {
+                continue;
+            }
+            list.addAll(mods);
+        }
+        return list;
+    }
+
+    @Inject(method = "reset", at = @At("HEAD"))
+    private void onResetCache(CallbackInfo ci)
+    {
+        this.cachedComponentsList = null;
+    }
 
     @Override
     public <C extends MachineComponent<T>, T> List<C> getComponents(ComponentType<T> type, IOType mode)
