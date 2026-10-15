@@ -162,6 +162,30 @@ public class Config
         return false;
     }
 
+    public static final ModConfigSpec.IntValue FORCE_LOAD_MAX_CHUNKS = MMR_BUILDER
+        .comment("Default maximum number of chunks a force-loading controller may keep loaded.",
+                "If a structure touches more chunks, only the closest ones to the controller are loaded.")
+        .defineInRange("FORCE_LOAD.maxChunksPerController", 9, 1, 64);
+
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> FORCE_LOAD_OVERRIDES = MMR_BUILDER
+        .comment("Per-machine overrides of the chunk limit, format 'machine_id=max' (e.g. 'catalyst:mega_smelter=4').")
+        .defineList("FORCE_LOAD.overrides", List.of(), () -> "", obj -> obj instanceof String);
+
+    public static int forceLoadMaxChunks = 9;
+    public static final Map<ResourceLocation, Integer> FORCE_LOAD_OVERRIDE_MAP = new HashMap<>();
+
+    public static int getForceLoadMax(ResourceLocation machineId)
+    {
+        return FORCE_LOAD_OVERRIDE_MAP.getOrDefault(machineId, forceLoadMaxChunks);
+    }
+
+    public static final ModConfigSpec.BooleanValue FORCE_LOAD_ENABLED = MMR_BUILDER
+        .comment("Master switch for machine chunk loading. Server-side only.",
+                "If false, no new chunk tickets are created and existing ones are released.")
+        .define("FORCE_LOAD.enabled", true);
+
+    public static boolean forceLoadEnabled = true;
+
     // SFML
     private static final Map<Integer, ModConfigSpec.ConfigValue<String>> SFM_COLOR_CONFIGS = new HashMap<>();
 
@@ -426,6 +450,29 @@ public class Config
                 else
                     HATCH_OR_BUS_TAGS.add(tag);
             }
+
+            forceLoadMaxChunks = FORCE_LOAD_MAX_CHUNKS.get();
+            FORCE_LOAD_OVERRIDE_MAP.clear();
+            for(String entry : FORCE_LOAD_OVERRIDES.get())
+            {
+                String[] parts = entry.split("=", 2);
+                ResourceLocation rl = parts.length == 2 ? ResourceLocation.tryParse(parts[0].trim()) : null;
+                if(rl == null)
+                {
+                    catalytictweaks.LOGGER.warn("Invalid forceLoad override: {}", entry);
+                    continue;
+                }
+                try
+                {
+                    FORCE_LOAD_OVERRIDE_MAP.put(rl, Math.max(1, Integer.parseInt(parts[1].trim())));
+                }
+                catch(NumberFormatException ex)
+                {
+                    catalytictweaks.LOGGER.warn("Invalid forceLoad limit in override: {}", entry);
+                }
+            }
+
+            forceLoadEnabled = FORCE_LOAD_ENABLED.get();
         }
         else if(eventSpec == SFM_SPEC)
         {

@@ -1,5 +1,6 @@
 package com.catalytictweaks.catalytictweaksmod;
 
+import com.catalytictweaks.catalytictweaksmod.mmr.MMRChunkLoader;
 import com.catalytictweaks.catalytictweaksmod.network.HideStructurePayload;
 import com.catalytictweaks.catalytictweaksmod.network.SyncMachinesBulkHandler;
 import com.catalytictweaks.catalytictweaksmod.network.SyncMachinesBulkPayload;
@@ -27,6 +28,7 @@ public class catalytictweaks
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.KJS_SPEC, "CatTweaks/kjs.toml");
         ModItems.register(modEventBus);
         modEventBus.addListener(catalytictweaks::registerPayloads);
+        modEventBus.addListener(MMRChunkLoader::register);
     }
 
     private static void registerPayloads(RegisterPayloadHandlersEvent event)

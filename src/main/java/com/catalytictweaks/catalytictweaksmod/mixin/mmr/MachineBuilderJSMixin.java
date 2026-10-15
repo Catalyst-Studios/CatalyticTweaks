@@ -11,6 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.catalytictweaks.catalytictweaksmod.mmr.ClientStructureHider;
 import com.catalytictweaks.catalytictweaksmod.mmr.DynamicMachineBridge;
+import com.catalytictweaks.catalytictweaksmod.mmr.ForceLoadRegistry;
+
 import org.spongepowered.asm.mixin.Pseudo;
 
 @Pseudo
@@ -52,7 +54,19 @@ public class MachineBuilderJSMixin
             }
             ((DynamicMachineBridge)machine).setShouldHide(this.shouldHide);
             ClientStructureHider.SHOULD_HIDE_MAP.put(machine.getRegistryName(), this.shouldHide);
+            if(this.forceLoad) ForceLoadRegistry.MACHINES.add(machine.getRegistryName());
+            else ForceLoadRegistry.MACHINES.remove(machine.getRegistryName());
             //catalytictweaks.LOGGER.error("MMR_DEBUG: Applied shouldHide={} to machine {} and saved to map", this.shouldHide, machine.getRegistryName());
         }
+    }
+
+    @Unique
+    private boolean forceLoad = false;
+
+    @Unique
+    public MachineBuilderJS forceLoad(boolean value)
+    {
+        this.forceLoad = value;
+        return (MachineBuilderJS)(Object)this;
     }
 }

@@ -1,6 +1,5 @@
 package com.catalytictweaks.catalytictweaksmod.mixin.mmr;
 
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -11,10 +10,10 @@ import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 
 import com.catalytictweaks.catalytictweaksmod.mmr.IMMRScene;
+import com.catalytictweaks.catalytictweaksmod.mmr.MMRLayout;
+import com.catalytictweaks.catalytictweaksmod.mmr.MMRPopup;
 import com.google.common.collect.Maps;
-
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.ui.Style;
 import com.lowdragmc.lowdraglib2.gui.ui.UI;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.ItemSlot;
@@ -22,8 +21,6 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Scene;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.SplitView;
-import com.lowdragmc.lowdraglib2.gui.ui.layout.LayoutProperties;
-import com.lowdragmc.lowdraglib2.gui.ui.style.Property;
 import com.lowdragmc.lowdraglib2.gui.ui.style.StylesheetManager;
 import com.lowdragmc.lowdraglib2.integration.xei.IngredientIO;
 import com.lowdragmc.lowdraglib2.utils.virtuallevel.DummyWorld;
@@ -31,17 +28,17 @@ import com.lowdragmc.lowdraglib2.utils.virtuallevel.DummyWorld;
 import es.degrassi.mmreborn.common.block.BlockController;
 import es.degrassi.mmreborn.common.integration.xei.MultiblockRecipe;
 import es.degrassi.mmreborn.common.integration.xei.MultiblockScene;
+import es.degrassi.mmreborn.common.integration.xei.UnlimitedItemSlot;
 import es.degrassi.mmreborn.common.item.ControllerItem;
 import es.degrassi.mmreborn.common.machine.DynamicMachine;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 
 @Pseudo
-@SuppressWarnings({"rawtypes", "unchecked", "null"})
+@SuppressWarnings({"null"})
 @Mixin(value = MultiblockRecipe.class, remap = false)
 public abstract class MultiblockRecipeMixin
 {
-
     @Shadow
     protected DynamicMachine multiblock;
 
@@ -51,49 +48,37 @@ public abstract class MultiblockRecipeMixin
         DummyWorld scene = MultiblockScene.createTestScene(multiblock);
         Map<ItemSlot, List<ItemStack>> requiredItems = Maps.newHashMap();
 
-        var itemsView = new ScrollerView();
-
-        itemsView.viewContainer.layout(layout -> {
-            try
-            {
-                Class<?> fdClass = Class.forName("dev.vfyjxf.taffy.style.FlexDirection");
-                Object rowEnum = Enum.valueOf((Class<Enum>)fdClass, "ROW");
-
-                Class<?> fwClass = Class.forName("dev.vfyjxf.taffy.style.FlexWrap");
-                Object wrapEnum = Enum.valueOf((Class<Enum>)fwClass, "WRAP");
-
-                Class<?> layoutPropsClass = LayoutProperties.class;
-                Property propDir = (Property)layoutPropsClass.getField("FLEX_DIRECTION").get(null);
-                Property propWrap = (Property)layoutPropsClass.getField("FLEX_WRAP").get(null);
-
-                Style rawStyle = (Style)(Object)layout;
-                rawStyle.set(propDir, rowEnum);
-                rawStyle.set(propWrap, wrapEnum);
-
-                Method gapMethod = layout.getClass().getMethod("gapAll", float.class);
-                gapMethod.invoke(layout, 2.0f);
-            }
-            catch(Exception ignored)
-            {
-            }
-        });
-
+        ScrollerView itemsView = new ScrollerView();
+        MMRLayout.rowWrap(itemsView.viewContainer, 2.0f);
         itemsView.addScrollViewChildren(new ItemSlot()
-                .setItem(ControllerItem.makeMachineItem(multiblock.getRegistryName()))
-                .xeiRecipeIngredient(IngredientIO.INPUT)
-                .xeiRecipeSlot());
+                                            .setItem(ControllerItem.makeMachineItem(multiblock.getRegistryName()))
+                                            .xeiRecipeIngredient(IngredientIO.INPUT)
+                                            .xeiRecipeSlot());
 
-        multiblock.getStacks().stream().filter(stacks -> !stacks.isEmpty() && !stacks.stream().allMatch(ItemStack::isEmpty)).forEach(stacks -> {
-            var slot = new ItemSlot();
-            slot.setItem(MultiblockScene.blockTimer.getOrDefault(stacks, ItemStack.EMPTY))
-                .xeiRecipeIngredient(IngredientIO.INPUT)
-                .xeiRecipeSlot();
-            requiredItems.put(slot, stacks);
-        });
+        UIElement popupLayer = MMRPopup.createLayer();
+        AtomicReference<List<ItemStack>> openFor = new AtomicReference<>(null);
+
+        UIElement rightPanel = new UIElement()
+                                   .layout(layout -> layout.widthPercent(100).heightPercent(100));
+
+        multiblock.getStacks().stream()
+            .filter(stacks -> !stacks.isEmpty() && !stacks.stream().allMatch(ItemStack::isEmpty))
+            .forEach(stacks -> {
+                UnlimitedItemSlot slot = new UnlimitedItemSlot();
+                ItemStack first = stacks.getFirst();
+                ItemStack display = MultiblockScene.blockTimer.getOrDefault(stacks, first).copy();
+                if(display.isEmpty()) display = first.copy();
+                display.setCount(first.getCount());
+
+                slot.setItem(display).xeiRecipeIngredient(IngredientIO.INPUT).xeiRecipeSlot();
+                requiredItems.put(slot, stacks);
+                MMRPopup.bindSlot(slot, stacks, rightPanel, popupLayer, openFor);
+            });
 
         itemsView.addScrollViewChildren(requiredItems.keySet().toArray(ItemSlot[] ::new));
 
-        var blockLabel = new Label().setText("");
+        Label blockLabel = new Label();
+        blockLabel.setText("");
         AtomicReference<BlockPos> selectedPos = new AtomicReference<>(null);
 
         Scene sceneElement = new Scene();
@@ -110,10 +95,12 @@ public abstract class MultiblockRecipeMixin
             .setBeforeWorldRender(s -> MultiblockScene.tick(scene, multiblock))
             .setAfterWorldRender(s -> {
                 requiredItems.forEach((slot, stacks) -> {
-                    var newStack = MultiblockScene.blockTimer.getOrDefault(stacks, ItemStack.EMPTY);
-                    if(!ItemStack.matches(slot.getValue(), newStack))
+                    ItemStack current = MultiblockScene.blockTimer.getOrDefault(stacks, ItemStack.EMPTY);
+                    if(!current.isEmpty())
                     {
-                        slot.setItem(newStack);
+                        current = current.copy();
+                        current.setCount(stacks.getFirst().getCount());
+                        slot.setItem(current);
                     }
                 });
 
@@ -148,9 +135,7 @@ public abstract class MultiblockRecipeMixin
                              .setPercentage(5)
                              .addClass("panel_bg");
 
-        var rightPanel = new UIElement()
-                             .layout(layout -> layout.widthPercent(100).heightPercent(100))
-                             .addChildren(rightSplit);
+        rightPanel.addChildren(rightSplit);
 
         var mainSplit = new SplitView.Horizontal()
                             .left(itemsView.layout(layout -> layout.widthPercent(100).heightPercent(100)))
