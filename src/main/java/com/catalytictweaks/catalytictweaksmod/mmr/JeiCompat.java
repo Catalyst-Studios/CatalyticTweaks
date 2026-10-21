@@ -8,6 +8,7 @@ import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
+@SuppressWarnings("null")
 @JeiPlugin
 public final class JeiCompat implements IModPlugin
 {

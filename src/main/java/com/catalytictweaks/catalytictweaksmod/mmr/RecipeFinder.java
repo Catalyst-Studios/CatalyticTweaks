@@ -166,12 +166,9 @@ public class RecipeFinder
                             {
                                 bestMatch = Pair.of(checker.getRecipe(), maxCrafts);
                             }
-                            else if(currentPriority == bestPriority)
+                            else if(currentPriority == bestPriority && maxCrafts > bestMatch.getSecond())
                             {
-                                if(maxCrafts > bestMatch.getSecond())
-                                {
-                                    bestMatch = Pair.of(checker.getRecipe(), maxCrafts);
-                                }
+                                bestMatch = Pair.of(checker.getRecipe(), maxCrafts);
                             }
                         }
                         continue;
@@ -189,5 +186,106 @@ public class RecipeFinder
         }
 
         return Optional.empty();
+    }
+
+    public static List<Pair<RecipeHolder<MachineRecipe>, Integer>> findRecipes(Context ctx, boolean immediately)
+    {
+        var tile = ctx.getTile();
+        if(tile.getLevel() == null || !ctx.getCore().isActive())
+        {
+            return List.of();
+        }
+
+        int cooldown = ctx.getRecipeCheckCooldown();
+        boolean shouldCheck = immediately || ctx.isComponentChanged();
+
+        if(!shouldCheck)
+        {
+            shouldCheck = (cooldown-- <= 0);
+            ctx.setRecipeCheckCooldown(cooldown);
+        }
+
+        if(shouldCheck)
+        {
+            ctx.setRecipeCheckCooldown(ctx.getBaseCooldown());
+
+            ctx.getOkToCheck().clear();
+            ctx.getOkToCheck().addAll(ctx.getRecipes());
+
+            InputSnapshot snapshot = new InputSnapshot((IComponentManager)tile.getComponentManager());
+            List<Pair<RecipeHolder<MachineRecipe>, Integer>> matchingRecipes = new ArrayList<>();
+            Iterator<RecipeChecker<MachineRecipe>> iterator = ctx.getOkToCheck().iterator();
+
+            while(iterator.hasNext())
+            {
+                RecipeChecker<MachineRecipe> checker = iterator.next();
+
+                MachineRecipe recipe = checker.getRecipe().value();
+                boolean logicCheck = true;
+                RecipeCheckerAccessor checkerAccess = (RecipeCheckerAccessor)checker;
+
+                for(var recipeRequirement : checkerAccess.getInventoryRequirements())
+                {
+                    IRequirement<?, ?> rawReq = recipeRequirement.requirement();
+                    if(!snapshot.contains(rawReq))
+                    {
+                        logicCheck = false;
+                        break;
+                    }
+                }
+
+                if(logicCheck)
+                {
+                    int maxCrafts = Integer.MAX_VALUE;
+                    boolean inputsSufficient = true;
+
+                    for(RecipeRequirement<?, ?, ?> req : recipe.getRequirements())
+                    {
+                        if(req.requirement().getMode() != IOType.INPUT)
+                            continue;
+                        int matches = snapshot.calculateMatches(req.requirement());
+
+                        if(matches == 0)
+                        {
+                            inputsSufficient = false;
+                            break;
+                        }
+
+                        maxCrafts = Math.min(maxCrafts, matches);
+                    }
+
+                    if(inputsSufficient)
+                    {
+                        if(maxCrafts == Integer.MAX_VALUE)
+                            maxCrafts = 1;
+
+                        matchingRecipes.add(Pair.of(checker.getRecipe(), maxCrafts));
+                        continue;
+                    }
+                }
+
+                if(!logicCheck)
+                {
+                    iterator.remove();
+                }
+            }
+
+            matchingRecipes.sort((p1, p2) -> {
+                int priorityComparison = Integer.compare(
+                    p2.getFirst().value().getConfiguredPriority(), 
+                    p1.getFirst().value().getConfiguredPriority()
+                );
+                if(priorityComparison != 0)
+                {
+                    return priorityComparison;
+                }
+                return Integer.compare(p2.getSecond(), p1.getSecond());
+            });
+
+            ctx.setRecipeCheckCooldown(matchingRecipes.isEmpty() ? IDLE_RECIPE_COOLDOWN_TICKS : ctx.getBaseCooldown());
+            return matchingRecipes;
+        }
+
+        return List.of();
     }
 }

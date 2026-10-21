@@ -19,6 +19,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.common.world.chunk.RegisterTicketControllersEvent;
 import net.neoforged.neoforge.common.world.chunk.TicketController;
 
+@SuppressWarnings("null")
 public final class MMRChunkLoader
 {
     public static final TicketController CONTROLLER = new TicketController(
