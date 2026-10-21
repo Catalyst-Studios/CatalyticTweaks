@@ -1,11 +1,9 @@
 package com.catalytictweaks.catalytictweaksmod.mmr;
 
 import com.catalytictweaks.catalytictweaksmod.Config;
-import com.google.common.collect.Sets;
 
 import es.degrassi.mmreborn.api.capability.EntityHandler;
 import es.degrassi.mmreborn.api.crafting.requirement.IRequirement;
-// import es.degrassi.mmreborn.ars.common.crafting.requirement.RequirementSource;
 import es.degrassi.mmreborn.common.crafting.requirement.RequirementDimension;
 import es.degrassi.mmreborn.common.crafting.requirement.RequirementEnergy;
 import es.degrassi.mmreborn.common.crafting.requirement.RequirementEnergyPerTick;
@@ -28,56 +26,84 @@ import es.degrassi.mmreborn.mekanism.common.machine.component.ChemicalComponent;
 import mekanism.api.chemical.Chemical;
 import mekanism.api.chemical.ChemicalStack;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @SuppressWarnings("null")
 public class InputSnapshot
 {
+    private final Map<Item, List<ItemStack>> itemsByType = new HashMap<>();
+    private final Map<Fluid, Long> fluidTotals = new HashMap<>();
+    private final Map<Chemical, Long> chemicalTotals = new HashMap<>();
 
-    public static class InnerInputSnapshot
-    {
-        public Fluid liquid;
-        public long size;
-
-        public InnerInputSnapshot(Fluid liquid, long size)
-        {
-            this.liquid = liquid;
-            this.size = size;
-        }
-    }
-
-    public static class InnerInputGasSnapshot
-    {
-        public Chemical liquid;
-        public long size;
-
-        public InnerInputGasSnapshot(Chemical liquid, long size)
-        {
-            this.liquid = liquid;
-            this.size = size;
-        }
-    }
-
-    private final List<ItemStack> itemStacks = new ArrayList<>();
-    private final List<InnerInputSnapshot> fluidList = new ArrayList<>();
     private long energyStored = 0;
-    //private long sourceStored = 0;
     private long fuelStored = 0;
-    private final List<InnerInputGasSnapshot> gasList = new ArrayList<>();
-
     private int redstoneStored = 0;
     private ResourceLocation currentDimension;
     private final List<EntityHandler> entityHandlers = new ArrayList<>();
 
+    private long signature = 0;
+
     public InputSnapshot(IComponentManager manager)
     {
         aggregateInputs(manager);
+        this.signature = computeSignature();
+    }
+
+    public Set<Item> presentItems()
+    {
+        return itemsByType.keySet();
+    }
+
+    public Set<Fluid> presentFluids()
+    {
+        return fluidTotals.keySet();
+    }
+
+    public Set<Chemical> presentChemicals()
+    {
+        return chemicalTotals.keySet();
+    }
+
+    public long getSignature()
+    {
+        return signature;
+    }
+
+    private long computeSignature()
+    {
+        long h = 17;
+        for(var e : itemsByType.entrySet())
+        {
+            long itemHash = e.getKey().hashCode();
+            for(ItemStack s : e.getValue())
+            {
+                itemHash += 31L * s.getCount() + s.getComponents().hashCode();
+            }
+            h += itemHash * 0x9E3779B97F4A7C15L;
+        }
+        for(var e : fluidTotals.entrySet())
+        {
+            h += (e.getKey().hashCode() * 31L + e.getValue()) * 0xC2B2AE3D27D4EB4FL;
+        }
+        for(var e : chemicalTotals.entrySet())
+        {
+            h += (e.getKey().hashCode() * 31L + e.getValue()) * 0x165667B19E3779F9L;
+        }
+        h = h * 31 + energyStored;
+        h = h * 31 + fuelStored;
+        h = h * 31 + redstoneStored;
+        h = h * 31 + (currentDimension == null ? 0 : currentDimension.hashCode());
+        h = h * 31 + entityHandlers.size();
+        return h;
     }
 
     private void aggregateInputs(IComponentManager manager)
@@ -104,10 +130,9 @@ public class InputSnapshot
                     for(int i = 0; i < handler.getTanks(); i++)
                     {
                         FluidStack stack = handler.getFluidInTank(i);
-
                         if(!stack.isEmpty())
                         {
-                            addFluidToSnapshot(stack.getFluid(), stack.getAmount());
+                            fluidTotals.merge(stack.getFluid(), (long)stack.getAmount(), Long::sum);
                         }
                     }
                 }
@@ -128,16 +153,15 @@ public class InputSnapshot
             });
 
             manager.getComponents(es.degrassi.mmreborn.mekanism.common.registration.ComponentRegistration.COMPONENT_CHEMICAL.get(), IOType.INPUT).forEach(comp -> {
-                if(comp instanceof ChemicalComponent fluidComp)
+                if(comp instanceof ChemicalComponent chemComp)
                 {
-                    var handler = fluidComp.getContainerProvider();
+                    var handler = chemComp.getContainerProvider();
                     for(int i = 0; i < handler.getChemicalTanks(); i++)
                     {
                         ChemicalStack stack = handler.getChemicalInTank(i);
-
                         if(!stack.isEmpty())
                         {
-                            addChemicalToSnapshot(stack.getChemical(), stack.getAmount());
+                            chemicalTotals.merge(stack.getChemical(), stack.getAmount(), Long::sum);
                         }
                     }
                 }
@@ -175,7 +199,8 @@ public class InputSnapshot
 
     private void addStackToSnapshot(ItemStack newStack)
     {
-        for(ItemStack existing : itemStacks)
+        List<ItemStack> list = itemsByType.computeIfAbsent(newStack.getItem(), k -> new ArrayList<>(2));
+        for(ItemStack existing : list)
         {
             if(ItemStack.isSameItemSameComponents(existing, newStack))
             {
@@ -183,33 +208,47 @@ public class InputSnapshot
                 return;
             }
         }
-        itemStacks.add(newStack.copy());
+        list.add(newStack.copy());
     }
 
-    private void addChemicalToSnapshot(Chemical fluid, long amount)
+    private long countItems(ItemStack[] recipeStacks)
     {
-        for(InnerInputGasSnapshot entry : gasList)
-        {
-            if(entry.liquid.equals(fluid))
-            {
-                entry.size += amount;
-                return;
-            }
-        }
-        gasList.add(new InnerInputGasSnapshot(fluid, amount));
-    }
+        if(itemsByType.isEmpty())
+            return 0;
 
-    private void addFluidToSnapshot(Fluid fluid, long amount)
-    {
-        for(InnerInputSnapshot entry : fluidList)
+        long total = 0;
+        Item lastLoose = null;
+
+        for(ItemStack recipeStack : recipeStacks)
         {
-            if(entry.liquid.equals(fluid))
+            Item item = recipeStack.getItem();
+            List<ItemStack> inventory = itemsByType.get(item);
+            if(inventory == null)
+                continue;
+
+            if(Config.LOOSE_MATCH_SET.contains(item))
             {
-                entry.size += amount;
-                return;
+                if(item == lastLoose)
+                    continue;
+                lastLoose = item;
+
+                for(ItemStack inv : inventory)
+                {
+                    total += inv.getCount();
+                }
+            }
+            else
+            {
+                for(ItemStack inv : inventory)
+                {
+                    if(ItemStack.isSameItemSameComponents(recipeStack, inv))
+                    {
+                        total += inv.getCount();
+                    }
+                }
             }
         }
-        fluidList.add(new InnerInputSnapshot(fluid, amount));
+        return total;
     }
 
     public int calculateMatches(IRequirement<?, ?> requirement)
@@ -221,88 +260,44 @@ public class InputSnapshot
             if(requiredCount == 0)
                 return Integer.MAX_VALUE;
 
-            long totalAvailable = 0;
-
-            for(ItemStack inventoryStack : itemStacks)
-            {
-                for(ItemStack recipeStack : sized.ingredient().getItems())
-                {
-
-                    if(Config.LOOSE_MATCH_SET.contains(recipeStack.getItem()))
-                    {
-                        if(ItemStack.isSameItem(recipeStack, inventoryStack))
-                        {
-                            totalAvailable += inventoryStack.getCount();
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        if(ItemStack.isSameItemSameComponents(recipeStack, inventoryStack))
-                        {
-                            totalAvailable += inventoryStack.getCount();
-                            break;
-                        }
-                    }
-                }
-            }
+            long totalAvailable = countItems(sized.ingredient().getItems());
             return (int)(totalAvailable / requiredCount);
         }
         else if(requirement instanceof RequirementFluid fluidReq)
         {
             var sized = fluidReq.getIngredient();
             int requiredAmount = sized.amount();
-
             if(requiredAmount == 0)
                 return Integer.MAX_VALUE;
 
             long totalAvailable = 0;
-            Set<Fluid> checkedFluids = Sets.newHashSet();
-
+            Fluid last = null;
             for(FluidStack validStack : sized.getFluids())
             {
                 Fluid fluid = validStack.getFluid();
-                if(checkedFluids.add(fluid))
-                {
-                    for(InnerInputSnapshot entry : fluidList)
-                    {
-                        if(entry.liquid.equals(fluid))
-                        {
-                            totalAvailable += entry.size;
-                        }
-                    }
-                }
+                if(fluid == last)
+                    continue;
+                last = fluid;
+                Long amount = fluidTotals.get(fluid);
+                if(amount != null)
+                    totalAvailable += amount;
             }
-
             return (int)(totalAvailable / requiredAmount);
         }
         else if((Object)requirement instanceof RequirementChemical chemReq)
         {
-            var requiredStack = chemReq.required;
             long requiredAmount = chemReq.amount;
-
             if(requiredAmount == 0)
                 return Integer.MAX_VALUE;
 
-            long totalAvailable = 0;
-            Chemical targetChemical = requiredStack.getChemical();
-
-            for(InnerInputGasSnapshot entry : gasList)
-            {
-                if(entry.liquid == targetChemical)
-                {
-                    totalAvailable += entry.size;
-                }
-            }
-
-            return (int)(totalAvailable / requiredAmount);
+            Long available = chemicalTotals.get(chemReq.required.getChemical());
+            return available == null ? 0 : (int)(available / requiredAmount);
         }
         else if((Object)requirement instanceof RequirementFuel fuelReq)
         {
             long requiredAmount = fuelReq.required;
             if(requiredAmount == 0)
                 return Integer.MAX_VALUE;
-
             return (int)(this.fuelStored / requiredAmount);
         }
         else if((Object)requirement instanceof RequirementEnergy energyReq)
@@ -338,18 +333,9 @@ public class InputSnapshot
         {
             if(entityReq.getMode() == IOType.OUTPUT)
                 return Integer.MAX_VALUE;
-            if(!this.entityHandlers.isEmpty())
-            {
-                return Integer.MAX_VALUE;
-            }
-            return 0;
+            return this.entityHandlers.isEmpty() ? 0 : Integer.MAX_VALUE;
         }
-        // else if ((Object) requirement instanceof RequirementSource sourceReq) {
-        //     long requiredVal = sourceReq.required;
-        //     if (requiredVal == 0) return Integer.MAX_VALUE;
-        //     return (int) (this.sourceStored / requiredVal); 
-        // }
-        
+
         return Integer.MAX_VALUE;
     }
 
@@ -357,6 +343,7 @@ public class InputSnapshot
     {
         if(requirement.getMode() == IOType.OUTPUT)
             return true;
+
         if(requirement instanceof RequirementItem itemReq)
         {
             var ingredient = itemReq.getIngredient();
@@ -364,61 +351,26 @@ public class InputSnapshot
             if(requiredCount == 0)
                 return true;
 
-            long totalAvailable = 0;
-
-            for(ItemStack inventoryStack : itemStacks)
-            {
-                for(ItemStack recipeStack : ingredient.ingredient().getItems())
-                {
-                    if (Config.LOOSE_MATCH_SET.contains(recipeStack.getItem()))
-                    {
-                        if(ItemStack.isSameItem(recipeStack, inventoryStack))
-                        {
-                            totalAvailable += inventoryStack.getCount();
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        if(ItemStack.isSameItemSameComponents(recipeStack, inventoryStack))
-                        {
-                            totalAvailable += inventoryStack.getCount();
-                            break;
-                        }
-                    }
-                }
-            }
-
-            return totalAvailable >= requiredCount;
+            return countItems(ingredient.ingredient().getItems()) >= requiredCount;
         }
         else if(requirement instanceof RequirementFluid fluidReq)
         {
             var ingredient = fluidReq.getIngredient();
+            int amount = ingredient.amount();
             for(FluidStack validStack : ingredient.getFluids())
             {
-                Fluid fluid = validStack.getFluid();
-                for(var entry : fluidList)
+                Long stored = fluidTotals.get(validStack.getFluid());
+                if(stored != null && stored >= amount)
                 {
-                    if(entry.liquid.equals(fluid) && entry.size >= ingredient.amount())
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
             return false;
         }
         else if((Object)requirement instanceof RequirementChemical chemReq)
         {
-            Chemical targetChemical = chemReq.required.getChemical();
-
-            for(var entry : gasList)
-            {
-                if(entry.liquid == targetChemical && entry.size >= chemReq.amount)
-                {
-                    return true;
-                }
-            }
-            return false;
+            Long stored = chemicalTotals.get(chemReq.required.getChemical());
+            return stored != null && stored >= chemReq.amount;
         }
         else if((Object)requirement instanceof RequirementFuel fuelReq)
         {
@@ -444,10 +396,6 @@ public class InputSnapshot
         {
             return !this.entityHandlers.isEmpty();
         }
-        // else if((Object)requirement instanceof RequirementSource s)
-        // {
-        //     return this.sourceStored > s.required;
-        // }
 
         return true;
     }

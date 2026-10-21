@@ -25,12 +25,19 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
-
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
 
 @SuppressWarnings("null")
 public class EmiSearchCat
@@ -38,11 +45,6 @@ public class EmiSearchCat
     private static final Logger LOGGER = LoggerFactory.getLogger("CatalyticTweaks/EmiSearchCat");
     private static final Map<String, String> MOD_NAME_CACHE = new ConcurrentHashMap<>(512);
     private static final Map<String, String> TOKEN_CACHE = new ConcurrentHashMap<>(65536);
-
-    static
-    {
-        Configurator.setLevel("CatalyticTweaks/EmiSearchCat", Level.INFO);
-    }
 
     private static class SearchData
     {

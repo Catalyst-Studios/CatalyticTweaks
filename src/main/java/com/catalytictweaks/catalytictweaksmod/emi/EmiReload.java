@@ -1,5 +1,6 @@
 package com.catalytictweaks.catalytictweaksmod.emi;
 
+import com.catalytictweaks.catalytictweaksmod.Logs;
 import com.google.common.collect.Lists;
 import dev.emi.emi.EmiPort;
 import dev.emi.emi.api.EmiInitRegistry;
@@ -26,8 +27,6 @@ import dev.emi.emi.runtime.EmiReloadManager;
 import dev.emi.emi.screen.EmiScreenManager;
 import net.minecraft.client.Minecraft;
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,12 +54,13 @@ public class EmiReload
 
     static
     {
-        Configurator.setLevel("CatalyticTweaks/EmiReloadMixin", Level.INFO);
+        Logs.apply();
         syncFromManager();
     }
 
     public static void run()
     {
+        Logs.apply();
         syncFromManager();
 
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
@@ -109,7 +109,7 @@ public class EmiReload
                     clear = false;
                     syncToManager();
                     String summary = "EMI cleared in " + (System.currentTimeMillis() - reloadStart) + "ms";
-                    LOGGER.info(summary);
+                    Logs.SUMMARY.info(summary);
                     break;
                 }
 
@@ -417,7 +417,8 @@ public class EmiReload
                         "  Recipe baking: " + timings.get("Recipe baking") + "ms\n" +
                         "  Search baking: " + timings.get("Search baking") + "ms\n" +
                         "  Total: " + totalTime + "ms";
-                LOGGER.info(summary);
+
+                Logs.SUMMARY.info(summary);
                 status = 2;
                 syncToManager();
                 break;

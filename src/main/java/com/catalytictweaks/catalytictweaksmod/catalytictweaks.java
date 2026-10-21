@@ -26,6 +26,7 @@ public class catalytictweaks
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.MMR_SPEC, "CatTweaks/mmr.toml");
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SFM_SPEC, "CatTweaks/sfm.toml");
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.KJS_SPEC, "CatTweaks/kjs.toml");
+        modContainer.registerConfig(ModConfig.Type.COMMON, Config.LOGS_SPEC, "CatTweaks/logs.toml");
         ModItems.register(modEventBus);
         modEventBus.addListener(catalytictweaks::registerPayloads);
         modEventBus.addListener(MMRChunkLoader::register);

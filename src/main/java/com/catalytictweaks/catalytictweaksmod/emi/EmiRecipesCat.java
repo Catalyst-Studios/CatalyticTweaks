@@ -33,9 +33,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
-
 @SuppressWarnings({"unchecked", "null", "rawtypes"})
 public class EmiRecipesCat
 {
@@ -61,7 +58,6 @@ public class EmiRecipesCat
 
     static
     {
-        Configurator.setLevel("CatalyticTweaks/EmiRecipesCat", Level.INFO);
         try
         {
             Class<?> managerClass = Class.forName("dev.emi.emi.registry.EmiRecipes$Manager");

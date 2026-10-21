@@ -1,5 +1,6 @@
 package com.catalytictweaks.catalytictweaksmod;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +30,7 @@ public class Config
     private static final ModConfigSpec.Builder MMR_BUILDER = new ModConfigSpec.Builder();
     private static final ModConfigSpec.Builder SFM_BUILDER = new ModConfigSpec.Builder();
     private static final ModConfigSpec.Builder KJS_BUILDER = new ModConfigSpec.Builder();
+    public static final ModConfigSpec.Builder LOGS_BUILDER = new ModConfigSpec.Builder();
 
     // Pipez
     //  BASIC
@@ -320,10 +322,123 @@ public class Config
                                                                                                       () -> "", obj -> obj instanceof String);
     private static final ModConfigSpec.BooleanValue au_first = KJS_BUILDER.comment("Should AU be loaded first or later than KubeJS").define("KJS.au_first", true);
 
+
+    private static final ModConfigSpec.BooleanValue SILENCE_EMI_LOGS = LOGS_BUILDER
+        .comment("Silences EMI and JEMI core/reload logs, keeping only the timing summary.")
+        .define("EMI.silenceEmiLogs", true);
+
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> EMI_JEMI_LOGGERS_CONFIG = LOGS_BUILDER
+        .comment("List of logger names for EMI/JEMI.")
+        .defineList("EMI.loggers", List.of(
+            "EMI", "emi", "dev.emi.emi", "dev.emi.emi.runtime.EmiLog",
+            "dev.emi.emi.runtime.EmiReloadLog", "JEMI"
+        ), () -> "", obj -> obj instanceof String);
+
+    private static final ModConfigSpec.BooleanValue SILENCE_JEI_LOGS = LOGS_BUILDER
+        .comment("Silences JEI internal logs, timers, and ingredient registration info.")
+        .define("JEI.silenceJeiLogs", true);
+
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> JEI_LOGGERS_CONFIG = LOGS_BUILDER
+        .comment("List of logger names for JEI.")
+        .defineList("JEI.loggers", List.of(
+            "mezz.jei", "mezz.jei.library", "mezz.jei.library.load",
+            "mezz.jei.library.ingredients", "mezz.jei.library.util"
+        ), () -> "", obj -> obj instanceof String);
+
+    private static final ModConfigSpec.BooleanValue SILENCE_RECIPE_MANAGER_LOGS = LOGS_BUILDER
+        .comment("Silences Vanilla RecipeManager errors (e.g., unknown registry keys).")
+        .define("VANILLA.silenceRecipeManagerLogs", true);
+
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> RECIPE_MANAGER_LOGGERS_CONFIG = LOGS_BUILDER
+        .comment("List of logger names for Vanilla RecipeManager.")
+        .defineList("VANILLA.loggers", List.of(
+            "net.minecraft.world.item.crafting.RecipeManager",
+            "net.minecraft.world.item.crafting"
+        ), () -> "", obj -> obj instanceof String);
+
+    private static final ModConfigSpec.BooleanValue SILENCE_ADDON_LOGS = LOGS_BUILDER
+        .comment("Silences EMI/JEI addon compatibility errors and stack deserialization exceptions.")
+        .define("ADDONS.silenceAddonLogs", true);
+
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> ADDON_LOGGERS_CONFIG = LOGS_BUILDER
+        .comment("List of logger names for EMI/JEI addons.")
+        .defineList("ADDONS.loggers", List.of(
+            "emiffect", "moe.prwk.emiffect", "mekagenjei"
+        ), () -> "", obj -> obj instanceof String);
+
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> OWN_LOGGERS_CONFIG = LOGS_BUILDER
+        .comment("List of own internal logger names.")
+        .defineList("OWN.loggers", List.of(
+            "CatalyticTweaks/EmiSearchCat",
+            "CatalyticTweaks/EmiReloadMixin",
+            "CatalyticTweaks/EmiRecipesCat"
+        ), () -> "", obj -> obj instanceof String);
+
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> EXTRA_SILENCED_LOGGERS = LOGS_BUILDER
+        .comment("Custom list of loggers to silence. Independent of installed mods.",
+                 "Example: ['some_mod_id', 'com.example.mod.class']")
+        .defineList("DYNAMIC.extraSilencedLoggers", List.of(), () -> "", obj -> obj instanceof String);
+
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> FILTERED_LOG_PATTERNS = LOGS_BUILDER
+        .comment("List of text patterns to silence across all loggers.",
+                 "If a log message contains any of these substrings, it will be suppressed.")
+        .defineList("PATTERNS.filteredPatterns",
+            List.of(
+                // Modular Machinery Reborn
+                "Built recipe with id:",
+                "Hiding recipe:",
+
+                // RecipeManager & KubeJS
+                "Parsing error loading recipe",
+                "Error parsing recipe",
+                "Failed to parse recipe",
+                "Skipping recipe",
+                "Unable to inherit the cooking recipe with ID:",
+                "Recipe has more fluid inputs",
+                "Unknown recipe category:",
+
+                // AlmostUnified
+                "[AutoHiding]",
+                "Error unifying recipe",
+                "was unified by:",
+                "underground_ores:",
+                "Removed features from Biome",
+
+                // Modelos, Sprites y Animaciones
+                "missing model for variant:",
+                "Unable to load model:",
+                "Invalid frame index on sprite",
+                "Found animation file with improper file name format",
+                "Unable to parse animation:",
+                "Geckolib.CompoundException:",
+
+                // Silent Gear
+                "Decoding trait \"",
+                "Decoding material \"",
+                "Decoding part \"",
+                "Decoded ",
+                "Reloading material files",
+
+                // Malum, Curios, Patchouli & Immersive Engineering
+                "Added spirit drops for entity",
+                "Malignant conversion data references an attribute that does not exist",
+                "Parsing error loading curio slot",
+                "Couldn't fully analyze",
+                "SPIRIT_FURNACE_RECIPES_REGISTRAR",
+                "Error loading and compiling book",
+
+                // EMI / JEI / Addons
+                "extra_mod_integrations_",
+                "onRuntimeAvailable threw exception",
+                "[polymorph:recipe_transfer] Loaded in"
+            ),
+            () -> "", obj -> obj instanceof String);
+
     public static final ModConfigSpec PIPEZ_SPEC = PIPEZ_BUILDER.build();
     public static final ModConfigSpec MMR_SPEC = MMR_BUILDER.build();
     public static final ModConfigSpec SFM_SPEC = SFM_BUILDER.build();
     public static final ModConfigSpec KJS_SPEC = KJS_BUILDER.build();
+    public static final ModConfigSpec LOGS_SPEC = LOGS_BUILDER.build();
 
     public static boolean basicCanChangeRedstoneMode, basicCanChangeFilter, basicCanChangeDistribution;
     public static boolean improvedCanChangeRedstoneMode, improvedCanChangeFilter, improvedCanChangeDistribution;
@@ -338,6 +453,19 @@ public class Config
     public static boolean COMMAS;
     public static boolean COMPACT;
     public static boolean AU_FIRST;
+
+    // LOGS
+    public static boolean silenceEmiLogs;
+    public static boolean silenceJeiLogs;
+    public static boolean silenceRecipeManagerLogs;
+    public static boolean silenceAddonLogs;
+    public static List<String> emiJemiLoggers = new ArrayList<>();
+    public static List<String> jeiLoggers = new ArrayList<>();
+    public static List<String> recipeManagerLoggers = new ArrayList<>();
+    public static List<String> addonLoggers = new ArrayList<>();
+    public static List<String> ownLoggers = new ArrayList<>();
+    public static List<String> extraSilencedLoggers = new ArrayList<>();
+    public static List<String> filteredPatterns = new ArrayList<>();
 
     @SuppressWarnings("unchecked")
     @SubscribeEvent
@@ -400,29 +528,19 @@ public class Config
                 List<String> blockNames = (List<String>)entry.get(2);
 
                 ResourceLocation rl = ResourceLocation.tryParse(machineId);
-                if(rl == null)
-                {
-                    catalytictweaks.LOGGER.warn("Invalid machine id in structureHiding config: {}", machineId);
-                    continue;
-                }
+                if(rl == null) continue;
 
                 Set<Integer> rowSet = new HashSet<>(rows);
                 Set<Block> blockSet = new HashSet<>();
                 for(String name : blockNames)
                 {
                     ResourceLocation blockRl = ResourceLocation.tryParse(name);
-                    if(blockRl == null)
-                    {
-                        catalytictweaks.LOGGER.warn("Invalid block id in structureHiding config for {}: {}", machineId, name);
-                        continue;
-                    }
+                    if(blockRl == null) continue;
                     Block block = BuiltInRegistries.BLOCK.get(blockRl);
-                    if(block == BuiltInRegistries.BLOCK.get(BuiltInRegistries.BLOCK.getDefaultKey()))
+                    if(block != BuiltInRegistries.BLOCK.get(BuiltInRegistries.BLOCK.getDefaultKey()))
                     {
-                        catalytictweaks.LOGGER.warn("Block not found in structureHiding config for {}: {}", machineId, name);
-                        continue;
+                        blockSet.add(block);
                     }
-                    blockSet.add(block);
                 }
                 HIDING_CONFIG_MAP.put(rl, new MachineHidingConfig(rowSet, blockSet));
             }
@@ -431,24 +549,17 @@ public class Config
             HATCH_OR_BUS_TAGS.addAll(DEFAULT_HATCH_OR_BUS_TAGS);
             for(String entry : HATCH_OR_BUS_TAGS_CONFIG.get())
             {
-                if(entry == null || entry.isBlank())
-                    continue;
-
+                if(entry == null || entry.isBlank()) continue;
                 boolean remove = entry.startsWith("-");
                 String idStr = (remove ? entry.substring(1) : entry).trim();
 
                 ResourceLocation rl = ResourceLocation.tryParse(idStr);
-                if(rl == null)
+                if(rl != null)
                 {
-                    catalytictweaks.LOGGER.warn("Invalid tag id in hatchOrBusTags config: {}", entry);
-                    continue;
+                    TagKey<Block> tag = BlockTags.create(rl);
+                    if(remove) HATCH_OR_BUS_TAGS.remove(tag);
+                    else HATCH_OR_BUS_TAGS.add(tag);
                 }
-
-                TagKey<Block> tag = BlockTags.create(rl);
-                if(remove)
-                    HATCH_OR_BUS_TAGS.remove(tag);
-                else
-                    HATCH_OR_BUS_TAGS.add(tag);
             }
 
             forceLoadMaxChunks = FORCE_LOAD_MAX_CHUNKS.get();
@@ -457,18 +568,13 @@ public class Config
             {
                 String[] parts = entry.split("=", 2);
                 ResourceLocation rl = parts.length == 2 ? ResourceLocation.tryParse(parts[0].trim()) : null;
-                if(rl == null)
+                if(rl != null)
                 {
-                    catalytictweaks.LOGGER.warn("Invalid forceLoad override: {}", entry);
-                    continue;
-                }
-                try
-                {
-                    FORCE_LOAD_OVERRIDE_MAP.put(rl, Math.max(1, Integer.parseInt(parts[1].trim())));
-                }
-                catch(NumberFormatException ex)
-                {
-                    catalytictweaks.LOGGER.warn("Invalid forceLoad limit in override: {}", entry);
+                    try
+                    {
+                        FORCE_LOAD_OVERRIDE_MAP.put(rl, Math.max(1, Integer.parseInt(parts[1].trim())));
+                    }
+                    catch(NumberFormatException ignored) {}
                 }
             }
 
@@ -489,6 +595,22 @@ public class Config
             COMMAS = with_commas.get();
             COMPACT = compact.get();
             AU_FIRST = au_first.get();
+        }
+        else if(eventSpec == LOGS_SPEC)
+        {
+            silenceEmiLogs = SILENCE_EMI_LOGS.get();
+            silenceJeiLogs = SILENCE_JEI_LOGS.get();
+            silenceRecipeManagerLogs = SILENCE_RECIPE_MANAGER_LOGS.get();
+            silenceAddonLogs = SILENCE_ADDON_LOGS.get();
+            emiJemiLoggers = (List<String>) EMI_JEMI_LOGGERS_CONFIG.get();
+            jeiLoggers = (List<String>) JEI_LOGGERS_CONFIG.get();
+            recipeManagerLoggers = (List<String>) RECIPE_MANAGER_LOGGERS_CONFIG.get();
+            addonLoggers = (List<String>) ADDON_LOGGERS_CONFIG.get();
+            ownLoggers = (List<String>) OWN_LOGGERS_CONFIG.get();
+            extraSilencedLoggers = (List<String>) EXTRA_SILENCED_LOGGERS.get();
+            filteredPatterns = (List<String>) FILTERED_LOG_PATTERNS.get();
+
+            Logs.apply();
         }
     }
 
